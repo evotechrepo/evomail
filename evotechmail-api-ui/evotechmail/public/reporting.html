@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>EVOTECH US L.L.C. Mail Subscribers • Reporting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <link rel="stylesheet" href="/evotechmail/css/reporting.css">
+  <script src="/evotechmail/js/auth.js" defer></script>
+  <script src="/evotechmail/js/common.js" defer></script>
+  <script src="/evotechmail/js/reporting.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => { await ensureCurrentUser(); });
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/evotechmail/assets/evo.png" alt="">
+      <h1>Reporting</h1>
+      <span class="muted" id="statusMsg" style="margin-left:auto"></span>
+      <button id="dashback" class="btn btn--primary btn--sm" onclick="history.back()">Back</button>
+    </header>
+
+    <!-- HUB (small tiles, right under header) -->
+    <section id="hub" class="hub">
+        <button id="openAdmin" class="big-tile">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="#0b8a8f"><path d="M3 5h18v2H3zm0 6h12v2H3zm0 6h18v2H3z"/></svg></div>
+            <div class="txt"><strong>Report Admin</strong><span>Create/verify/save report definitions</span></div>
+        </button>
+        <button id="openRun" class="big-tile">
+            <div class="ico" style="background:#E6F4FF"><svg viewBox="0 0 24 24" fill="#0b8a8f"><path d="M8 5v14l11-7z"/></svg></div>
+            <div class="txt"><strong>Reports</strong><span>Run saved reports and download data</span></div>
+        </button>
+    </section>
+
+    <!-- Admin view (hidden by default) -->
+    <section id="adminView" class="view" hidden aria-hidden="true" style="display:none">
+      <div class="backline">
+        <button class="btn btn--sm" id="backFromAdmin">← Back</button>
+        <span class="spacer"></span>
+      </div>
+      <div class="row">
+        <span class="spacer"><br></span>
+      </div>
+
+      <div class="row">
+        <label style="flex:1 1 320px">
+          <select id="adminSelect" aria-label="Choose a report to edit">
+            <option value="">Select a report…</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <span class="spacer"><br></span>
+      </div>
+
+      <div class="card" id="adminEditor">
+        <div class="row" style="gap:12px">
+          <label style="flex:1 1 320px">
+            Report name
+            <input id="repName" type="text" placeholder="Enter report name">
+          </label>
+        </div>
+        <div style="margin-top:8px">
+          <label>Report SQL (use #TITLE# to split sections)</label>
+          <textarea id="repSql" spellcheck="false" placeholder="#TITLE# Example&#10;SELECT ...;"></textarea>
+          <span class="spacer"></span>
+          <span class="spacer"></span>
+          <button class="btn btn--primary btn--sm" id="newBtn">New</button>
+          <button class="btn btn--sm" id="verifyBtn">Verify</button>
+          <button class="btn btn--primary btn--sm" id="saveBtn">Save</button>
+          <button class="btn btn--danger btn--sm" id="delBtn" disabled>Delete</button>
+        </div>
+        <div id="verifyOut" class="muted" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <!-- Run view (hidden by default) -->
+    <section id="runView" class="view" hidden aria-hidden="true" style="display:none">
+      <div class="backline">
+        <button class="btn btn--sm" id="backFromRun">← Back</button>
+      </div>
+
+      <div class="row">
+        <span class="spacer"><br></span>
+      </div>
+
+      <div class="row">
+        <label style="flex:1 1 320px">
+          <select id="runSelect" aria-label="Choose a report to run">
+            <option value="">Select a report…</option>
+          </select>
+        </label>
+        <button class="btn btn--primary btn--sm" id="runBtn" aria-label="Run">
+          <svg viewBox="0 0 24 24" fill="#fff" width="14" height="14" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <span style="margin-left:6px"></span>
+        </button>
+      </div>
+
+      <div class="row">
+        <span class="spacer"><br></span>
+      </div>
+
+      <div id="runOut" class="card"></div>
+    </section>
+
+    <dialog id="alertModal" class="modal-overlay" aria-labelledby="alertTitle" aria-describedby="alertMsg">
+        <div class="modal" role="document">
+          <div class="modal__header">
+            <span id="alertTitle">Notice</span>
+            <button class="close-x" type="button" aria-label="Close">✕</button>
+          </div>
+          <div class="modal__body">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <!-- subtle info icon -->
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="#E0F2F1"></circle>
+                <text x="12" y="16" text-anchor="middle" font-size="12" fill="#006D75" font-weight="700">i</text>
+              </svg>
+              <div id="alertMsg" style="white-space:pre-wrap"></div>
+            </div>
+          </div>
+          <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" class="btn btn--primary" data-role="ok">OK</button>
+          </div>
+        </div>
+    </dialog>
+
+    <footer></footer>
+  </div>
+</body>
+</html>

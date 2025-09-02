@@ -1,0 +1,249 @@
+ 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>EVOTECH US L.L.C. Mail Subscribers • Admin</title>
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="stylesheet" href="/evotechmail/css/admin.css">
+  <script src="/evotechmail/js/common.js" defer></script>
+  <script src="/evotechmail/js/auth.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        await ensureCurrentUser();
+        // your mail page init can go here
+    });
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/evotechmail/assets/evo.png" alt="">
+      <h1>Admin</h1>
+      <span id="status" class="muted" style="margin-left:auto"></span>
+      <button id="dashback" class="btn btn--primary btn--sm" onclick="history.back()">Back</button>
+    </header>
+
+    <!-- HUB -->
+    <section id="hub" class="hub">
+      <button id="openHasher" class="big-tile">
+        <div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#0b8a8f" d="M3 5h18v2H3zm0 6h12v2H3zm0 6h18v2H3z"/></svg></div>
+        <div class="txt"><strong>Hasher</strong><span>Create secure password hashes</span></div>
+      </button>
+      <button id="openAddUser" class="big-tile">
+        <div class="ico" style="background:#E6F4FF"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#0b8a8f" d="M15 12a5 5 0 1 0-10 0 5 5 0 0 0 10 0zm2 1v-2h5v2h-5zm-2.5 5h-7c-2.21 0-4 1.79-4 4h15c0-2.21-1.79-4-4-4z"/></svg></div>
+        <div class="txt"><strong>Add User</strong><span>Create a new user account</span></div>
+      </button>
+    </section>
+
+    <!-- Hasher view -->
+    <section id="hasherView" class="view" hidden>
+      <div class="card">
+        <div class="row">
+          <button class="btn btn--sm" id="backFromHasher">← Back</button>
+          <span class="muted" id="hStatus" style="margin-left:auto"></span>
+        </div>
+        <div class="row" style="gap:12px; margin-top:8px">
+          <div style="flex:1 1 340px">
+            <label for="pwd">Password</label>
+            <div class="row" style="gap:8px">
+              <input id="pwd" type="password" autocomplete="new-password" spellcheck="false" placeholder="Enter password">
+              <button id="toggle" class="btn btn--sm" type="button" aria-pressed="false">Show</button>
+            </div>
+          </div>
+          <div class="row" style="gap:8px">
+            <button id="hashBtn" class="btn btn--primary" type="button">Generate hash</button>
+            <button id="clearBtn" class="btn btn--sm" type="button">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="outCard" hidden>
+        <div class="row">
+          <label style="margin:0">Hashed password</label>
+          <span id="algo" class="muted" style="margin-left:auto"></span>
+        </div>
+        <div class="row" style="gap:8px">
+          <input id="hashOut" class="mono" type="text" readonly aria-readonly="true" value="">
+          <button id="copyBtn" class="btn btn--sm" type="button">Copy</button>
+        </div>
+        <div id="msg" class="muted"></div>
+      </div>
+    </section>
+
+    <!-- Add User view -->
+    <section id="addUserView" class="view" hidden>
+      <div class="card">
+        <div class="row">
+          <button class="btn btn--sm" id="backFromUser">← Back</button>
+          <span class="muted" id="uStatus" style="margin-left:auto"></span>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <div style="flex:1 1 280px">
+            <label for="uEmail">Email</label>
+            <input id="uEmail" type="email" autocomplete="off" placeholder="user@example.com">
+          </div>
+          <div style="flex:1 1 220px">
+            <label for="uName">Display name (optional)</label>
+            <input id="uName" type="text" autocomplete="off" placeholder="Jane Doe">
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex:1 1 220px">
+            <label for="uRole">Role</label>
+            <select id="uRole">
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+          <div style="flex:0 0 200px; display:flex; align-items:flex-end">
+            <label class="toggle">
+              <input id="uActive" type="checkbox" checked>
+              <span class="track"><span class="dot"></span></span>
+              <span class="muted">Active</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex:1 1 280px">
+            <label for="uPwd">Password</label>
+            <input id="uPwd" type="password" placeholder="Set password">
+          </div>
+          <div style="flex:1 1 280px">
+            <label for="uPwd2">Confirm password</label>
+            <input id="uPwd2" type="password" placeholder="Confirm password">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <button id="uCreate" class="btn btn--primary">Create user</button>
+          <button id="uClear" class="btn">Clear</button>
+        </div>
+      </div>
+    </section>
+
+
+    <dialog id="alertModal" class="modal-overlay" aria-labelledby="alertTitle" aria-describedby="alertMsg">
+        <div class="modal" role="document">
+            <div class="modal__header">
+            <span id="alertTitle">Notice</span>
+            <button class="close-x" type="button" aria-label="Close">✕</button>
+            </div>
+            <div class="modal__body">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <!-- subtle info icon -->
+                <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="#E0F2F1"></circle>
+                <text x="12" y="16" text-anchor="middle" font-size="12" fill="#006D75" font-weight="700">i</text>
+                </svg>
+                <div id="alertMsg" style="white-space:pre-wrap"></div>
+            </div>
+            </div>
+            <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" class="btn btn--primary" data-role="ok">OK</button>
+            </div>
+        </div>
+      </dialog>
+
+  </div>
+
+  <script>
+  (function(){
+    const $ = (s,r=document)=>r.querySelector(s);
+    const show = (id)=>{ $('#hub').style.display='none'; $(id).hidden=false; };
+    const back = ()=>{ $('#hub').style.display='grid'; $('#hasherView').hidden=true; $('#addUserView').hidden=true; };
+
+    // Hub navigation
+    $('#openHasher').addEventListener('click', ()=> show('#hasherView'));
+    $('#openAddUser').addEventListener('click', ()=> show('#addUserView'));
+    $('#backFromHasher').addEventListener('click', back);
+    $('#backFromUser').addEventListener('click', back);
+
+    // Hasher
+    const pwd = $('#pwd'), hashOut = $('#hashOut'), outCard = $('#outCard'), msg = $('#msg'), algo = $('#algo'), hStatus = $('#hStatus');
+    $('#toggle').addEventListener('click', (e)=>{ const sh = pwd.type==='password'; pwd.type=sh?'text':'password'; e.currentTarget.textContent=sh?'Hide':'Show'; if (sh) requestAnimationFrame(()=>pwd.blur()); });
+    $('#hashBtn').addEventListener('click', async (ev)=>{
+    const btn = ev.currentTarget;            // <-- capture once
+    const v = (pwd.value||'').toString();
+    if (!v) { msg.textContent='Enter a password.'; return; }
+
+    btn.disabled = true;
+    hStatus.textContent='Hashing…';
+    msg.textContent='Hashing…';
+
+    try{
+        const r = await fetch('/evotechmail/api/admin/hash',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ password: v })
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP '+r.status));
+
+        hashOut.value = j.hash || '';
+        outCard.hidden = false;
+        hashOut.classList.add('fade-ok');
+        setTimeout(()=>hashOut.classList.remove('fade-ok'), 1400);
+        algo.textContent = (j.hash||'').startsWith('$argon2') ? 'argon2' : '';
+        msg.textContent='Done.';
+    } catch(e){
+        msg.textContent = 'Failed: ' + (e.message||'Error');
+    } finally {
+        if (btn) btn.disabled = false;         // <-- guard
+        hStatus.textContent='';
+    }
+    });
+
+    $('#clearBtn').addEventListener('click', ()=>{ pwd.value=''; hashOut.value=''; outCard.hidden=true; msg.textContent=''; });
+    $('#copyBtn').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(hashOut.value||''); msg.textContent='Copied'; setTimeout(()=>msg.textContent='',1200);}catch{ msg.textContent='Copy failed'; setTimeout(()=>msg.textContent='',1200);} });
+
+    // Add User
+    const uEmail=$('#uEmail'), uName=$('#uName'), uRole=$('#uRole'), uActive=$('#uActive'), uPwd=$('#uPwd'), uPwd2=$('#uPwd2'), uStatus=$('#uStatus');
+    $('#uCreate').addEventListener('click', async (ev)=>{
+    ev.preventDefault();
+    const btn = ev.currentTarget;            // <-- capture once
+
+    const email=(uEmail.value||'').trim().toLowerCase();
+    const password=(uPwd.value||'');
+    const password2=(uPwd2.value||'');
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ uStatus.textContent='Enter a valid email'; setTimeout(()=>uStatus.textContent='',1500); return; }
+    if (!password){ uStatus.textContent='Password required'; setTimeout(()=>uStatus.textContent='',1500); return; }
+    if (password!==password2){ uStatus.textContent='Passwords do not match'; setTimeout(()=>uStatus.textContent='',1500); return; }
+
+    const payload={ email, password, display_name:(uName.value||'').trim(), role_cd:uRole.value, is_active:uActive.checked };
+
+    btn.disabled = true;                      // <-- use stable ref
+    uStatus.textContent='Saving…';
+
+    try{
+        const r = await fetch('/evotechmail/api/admin/users',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP '+r.status));
+
+        uStatus.textContent='✔ User created (id '+j.user.user_id+')';
+        uStatus.classList.add('fade-ok');
+        setTimeout(()=>{ uStatus.textContent=''; uStatus.classList.remove('fade-ok'); },1400);
+        $('#uClear').click();
+    } catch(e){
+        uStatus.textContent='Failed: ' + (e.message||'Error');
+        setTimeout(()=>uStatus.textContent='',1800);
+    } finally {
+        if (btn) btn.disabled = false;          // <-- guard
+    }
+    });
+
+    $('#uClear').addEventListener('click', ()=>{ uEmail.value=''; uName.value=''; uRole.value='admin'; uActive.checked=true; uPwd.value=''; uPwd2.value=''; });
+
+    // default: show hub only
+    back();
+  })();
+  </script>
+</body>
+</html>

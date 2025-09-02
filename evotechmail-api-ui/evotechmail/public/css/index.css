@@ -1,0 +1,72 @@
+ /* Page-specific tweaks (keep minimal; move to app.css later if reused) */
+ .auth-wrap { min-height: 100dvh; display:grid; place-items:center; background:#f6f7f9; }
+ .auth-card { width:min(360px, 92vw); background:#fff; border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.08); padding:22px 22px 18px; }
+ .auth-brand { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+ .auth-brand img { width:42px; height:42px; border-radius:8px; }
+ .auth-title { font-size:18px; font-weight:700; margin:0; color:#0097A7 }
+ .auth-sub { color:#6b7280; margin:2px 0 16px; font-size:13px; }
+ .form-row { display:flex; flex-direction:column; gap:6px; margin:10px 0; }
+ .form-row label { font-size:13px; color:#374151; }
+ .form-row input[type="email"],
+ .form-row input[type="password"] { height:38px; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; font-size:14px; }
+ .form-row input:focus { outline:none; border-color:#059669; box-shadow:0 0 0 3px rgba(5,150,105,.15); }
+ .actions { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+ .muted { color:#6b7280; font-size:12px; }
+ .error { color:#b91c1c; font-size:13px; margin-top:8px; min-height:18px; }
+
+/* iOS/small-screen fixes */
+html, body { height: 100%; margin: 0; }
+ .auth-wrap{
+ min-height: 100svh;                 /* better on iOS than 100vh/dvh */
+ padding:
+     calc(env(safe-area-inset-top, 0px) + 16px)
+     16px
+     calc(env(safe-area-inset-bottom, 0px) + 16px);
+ /* keep your grid centering */
+ }
+
+ /* Make the card breathe above the iOS bottom bar */
+ .auth-card{
+ width: min(360px, 92vw);
+ margin: auto;                       /* ensure proper centering when toolbars collapse */
+ border-radius: 14px;
+ }
+
+ /* Prevent iOS zoom on focus */
+ @media (max-width: 600px){
+ .auth-title { font-size: 20px; }
+ .auth-sub { font-size: 14px; }
+ .form-row input[type="email"],
+ .form-row input[type="password"]{
+     height: 44px;
+     font-size: 16px;                  /* key: >= 16px stops Safari zoom */
+     -webkit-text-size-adjust: 100%;
+ }
+ .actions .muted { font-size: 13px; }
+ .actions button, .actions .btn { min-height: 44px; }
+ }
+
+ /* Tablet */
+ @media (min-width: 600px) and (max-width: 900px){
+ .auth-card{ width: min(480px, 90vw); padding: 28px; }
+ .form-row input[type="email"],
+ .form-row input[type="password"]{ height: 46px; font-size: 16px; }
+ }
+
+ /* Larger tablets / small laptops */
+ @media (min-width: 901px) and (max-width: 1200px){
+ .auth-card{ width: min(540px, 80vw); padding: 32px; }
+ .form-row input[type="email"],
+ .form-row input[type="password"]{ height: 46px; font-size: 16px; }
+ }
+
+ /* Desktop */
+ @media (min-width: 1201px){
+ .auth-card{ width: 420px; padding: 34px; }
+ .form-row input[type="email"],
+ .form-row input[type="password"]{ height: 46px; font-size: 16px; }
+ }
+
+ /* Better tap targets + iOS niceties */
+ label, input, button { -webkit-tap-highlight-color: transparent; }
+ input[type="checkbox"]{ width: 18px; height: 18px; }

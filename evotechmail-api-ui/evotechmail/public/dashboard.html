@@ -1,0 +1,351 @@
+<meta charset="UTF-8">
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EVOTECH US L.L.C. Mail Subscribers • Dashboard</title>
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="/evotechmail/js/app.ui.js" defer></script>
+  <script src="/evotechmail/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await ensureCurrentUser();
+      // your dashboard init can go here
+    });
+  </script>
+  <link rel="stylesheet" href="/evotechmail/css/app.css">
+  <script>
+    (async () => {
+      try {
+        const r = await fetch('/evotechmail/api/auth/me', { credentials: 'include' });
+        const j = r.ok ? await r.json() : { ok: false };
+        if (!j.ok) window.location.replace('/evotechmail/'); // replace avoids back-button loop
+      } catch {
+        window.location.replace('/evotechmail/');
+      }
+
+    })();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('backtomain')?.addEventListener('click', () => {
+      window.location.href = 'main.html';
+    });
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+    const email = await ensureCurrentUser({ redirectOn401: false });
+    //if (email) location.replace('/evotechmail/main.html');
+    });
+    </script>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  
+  <div style="text-align: center; margin-bottom: 20px;">
+    <img src="/evotechmail/assets/evo.png"
+         alt="EVOTECH Logo"
+         style="width: 100%; max-width: 260px; height: auto; border: none; image-rendering: auto;" />
+  </div>
+  
+
+  <div style="text-align: center; margin: 10px 0;">
+    <h1 style="font-size: 23px; font-weight: bold; color: #0097A7;">Virtual Mail Subscribers</h1>
+  </div>
+
+  <div id="sheetValues" class="tiles">
+    <!-- Stat cards (content stays as you already render it) -->
+    <span id="activeSubscribersBlock"  class="tile stat-card">Loading...</span>
+    <span id="allSubscribersBlock"     class="tile stat-card">Loading...</span>
+    <span id="uspsBcgActionsBlock"     class="tile stat-card">Loading...</span>
+    
+    <!-- Partners / quick links (each is its own tile) -->
+    <a class="tile partner" href="https://gateway.usps.com/eAdmin/view/signin" target="_blank" rel="noopener" aria-label="USPS Gateway">
+      <img src="/evotechmail/assets/partners/usps.png" alt="USPS BCG Gateway" loading="lazy">
+    </a>
+  
+    <a class="tile partner" href="https://operator.postscanmail.com/" target="_blank" rel="noopener" aria-label="PostScanMail">
+      <img src="/evotechmail/assets/partners/psm.jpg" alt="PostScanMail" loading="lazy">
+    </a>
+  
+    <a class="tile partner" href="https://ipostal1.com/CP/login.php" target="_blank" rel="noopener" aria-label="iPostal1">
+      <img src="/evotechmail/assets/partners/ip.jpg" alt="iPostal1" loading="lazy">
+    </a>
+  
+    <a class="tile partner" href="https://signup.anytimemailbox.com/login" target="_blank" rel="noopener" aria-label="Anytime Mailbox">
+      <img src="/evotechmail/assets/partners/atm.jpg" alt="Anytime Mailbox" loading="lazy">
+    </a>
+  
+    <!-- Mail Utilities (same size tile) -->
+    <a id="mailButtonX" class="tile partner" href="#" onclick="return false;" aria-label="Mail Utilities">
+      <!-- <img src="/evotechmail/assets/mail.png" alt="Mail Utilities" loading="lazy"> openMailUtils(); -->
+    </a>
+
+    <a id="backtomain" class="tile partner" href="#" aria-label="Back">
+      <img alt="Back"
+     src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>'>
+    </a>
+  </div>
+
+  
+  
+
+  <!--
+  <div id="sheetValues">
+     <button id="openUSPSLink" onclick="window.open('https://gateway.usps.com/eAdmin/view/signin', '_blank')">USPS Gateway</button>
+     <button onclick="window.open('https://operator.postscanmail.com/', '_blank')">PostScanMail</button>
+     <button onclick="window.open('https://ipostal1.com/CP/login.php', '_blank')">iPostal1</button>
+     <button onclick="window.open('https://signup.anytimemailbox.com/login', '_blank')">Anytime Mailbox</button>
+  </div>
+  -->
+
+
+
+
+
+  <div class="tabs">
+    <div class="tab active" id="searchTabButton"     data-tab="searchTab"        onclick="showTab('searchTab')">Search</div>
+    <div class="tab"        id="tabularSearchButton" data-tab="tabularSearchTab" onclick="showTab('tabularSearchTab')">Easy Lookup</div>
+    <div class="tab"        id="addTabButton"        data-tab="addTab"           onclick="showTab('addTab')">Add</div>
+    <div class="tab"        id="editTabButton"       data-tab="editTab"          onclick="showTab('editTab')" style="display: none;">Edit</div>
+    <div class="tab"        id="emailTabButton"      data-tab="emailTab"         style="display: none;" onclick="showTab('emailTab')">Email</div>
+  </div>
+
+
+  <div id="searchTab" class="tab-content">
+    <h4>Search Subscribers</h4>
+    <table class="search-form-table">
+      <tr>
+        <td><label for="pmb">PMB</label><input type="text" id="pmb" placeholder="Enter PMB" oninput="/*autoPopulateSearchSource()*/"></td>
+        <td><label for="source">Source</label>
+          <select id="source" onchange="forceSearchCorrectSource()">
+            <option value="">Select Source</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td><label for="firstName">First Name</label><input type="text" id="firstName" placeholder="Enter First Name"></td>
+        <td><label for="lastName">Last Name</label><input type="text" id="lastName" placeholder="Enter Last Name"></td>
+        <td><label for="company">Company</label><input type="text" id="company" placeholder="Enter Company"></td>
+      </tr>
+      <tr>
+        <td><label for="phone">Phone Number</label><input type="text" id="phone" placeholder="Enter Phone Number"></td>
+        <td><label for="email">Email</label><input type="text" id="email" placeholder="Enter Email"></td>
+      </tr>
+      <tr>
+        <td colspan="4"><label for="primaryAddress">Primary Address</label><textarea id="primaryAddress" placeholder="Enter Primary Address"></textarea></td>
+      </tr>
+      <tr>
+        <td><label for="status">Status</label>
+          <select id="status">
+            <option value="">Select Status</option>
+          </select>
+        </td>
+        <td><label for="bcg">BCG</label>
+          <select id="bcg">
+            <option value="">Select BCG</option>
+          </select>
+        </td>
+      </tr>
+    </table>
+    <button id="searchButton" onclick="searchData()">Search</button>
+    <button id="clearSearchForm" onclick="clearSearchForm()">Clear Form</button>
+    <p></p>
+    <div id="results"></div>
+    <div id="recordCount"></div>
+  </div>
+
+  <div id="addTab" class="tab-content" style="display: none;">
+    <h4>Add Subscriber</h4>
+    <table class="add-form-table">
+      <tr>
+        <td><label for="add_pmb">PMB</label><input type="text" id="add_pmb" placeholder="Enter PMB" oninput="autoPopulateAddSource()"></td>
+        <td><label for="add_source">Source</label>
+          <select id="add_source" onchange="forceCorrectSource()">
+            <option value="">Select Source</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td><label for="add_firstName">First Name</label><input type="text" id="add_firstName" placeholder="Enter First Name"></td>
+        <td><label for="add_lastName">Last Name</label><input type="text" id="add_lastName" placeholder="Enter Last Name"></td>
+        <td><label for="add_company">Company</label><input type="text" id="add_company" placeholder="Enter Company (defaults to Individual)"></td>
+      </tr>
+      <tr>
+        <td><label for="add_phone">Phone Number</label><input type="text" id="add_phone" placeholder="Enter Phone Number"></td>
+        <td><label for="add_email">Email</label><input type="text" id="add_email" placeholder="Enter Email"></td>
+      </tr>
+      <tr>
+        <td colspan="3"><label for="add_primaryAddress">Primary Address</label><textarea id="add_primaryAddress" placeholder="Enter Primary Address"  rows="5" style="height: 100%;"></textarea></td>
+      </tr>
+      <tr>
+        <td><label for="add_status">Status</label>
+          <select id="add_status">
+            <option value="">Select Status</option>
+          </select>
+        </td>
+        <td><label for="add_bcg">BCG</label><input type="text" id="add_bcg" value="New" disabled></td>
+      </tr>
+      <tr><td colspan="3">Notes</td></tr>
+      <tr>
+        <td colspan="3"><!--<label for="add_notes">Notes</label>--><textarea id="add_notes" placeholder="Enter Notes"  rows="5" style="height: 100%;""></textarea></td>
+      </tr>
+    </table>
+    <button id="addButton" onclick="checkAndAddRecord()">Add Subscriber</button>
+    <button id="clearAddForm" onclick="clearAddForm()">Clear Form</button>
+    <div id="addStatus"></div>
+  </div>
+
+  <div id="editTab" class="tab-content" style="display: none;">
+    <h4>Edit Subscriber</h4>
+    <table class="add-form-table">
+      <tr>
+        <td><label for="edit_pmb">PMB</label><input type="text" id="edit_pmb" readonly disabled></td>
+        <td><label for="edit_source">Source</label>
+          <select id="edit_source" disabled>
+            <option value="">Select Source</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td><label for="edit_firstName">First Name</label><input type="text" id="edit_firstName"></td>
+        <td><label for="edit_lastName">Last Name</label><input type="text" id="edit_lastName"></td>
+        <td><label for="edit_company">Company</label><input type="text" id="edit_company"></td>
+      </tr>
+      <tr>
+        <td><label for="edit_phone">Phone Number</label><input type="text" id="edit_phone"></td>
+        <td><label for="edit_email">Email</label><input type="text" id="edit_email"></td>
+      </tr>
+      <tr>
+        <td colspan="3"><label for="edit_primaryAddress">Primary Address</label><textarea id="edit_primaryAddress"  rows="5" style="height: 100%;" readonly></textarea></td>
+      </tr>
+      <tr>
+        <td><label for="edit_status">Status</label>
+          <select id="edit_status">
+            <option value="">Select Status</option>
+          </select>
+        </td>
+        <td><label for="edit_bcg">BCG</label>
+          <select id="edit_bcg">
+            <option value="">Select BCG</option>
+          </select>
+        </td>
+      </tr>
+      <tr><td colspan="3">Notes</td></tr>
+      <tr>
+        <td colspan="3"><textarea id="edit_notes" rows="5" style="height: 100%;"></textarea></td>
+      </tr>
+    </table>
+    <button id="updateSubscriberBtn" onclick="updateSubscriber()">Update Subscriber</button>
+    <button onclick="showTab('searchTab'); document.getElementById('editTabButton').style.display='none';">Cancel</button>
+    <input  type="hidden" id="edit_subscriber_id"> <!--type="hidden" -->
+  </div>
+
+  <!-- View Modal -->
+  <dialog id="viewModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal__header">
+        <span>Subscriber</span>
+        <button id="closeViewBtn" class="close-x" aria-label="Close">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="view-grid" style="font-size: 14px;">
+          <div><label>PMB</label><div id="view_pmb"></div></div>
+          <div><label>Name</label><div id="view_name"></div></div>
+          <div><label>Company</label><div id="view_company"></div></div>
+          <div><label>Phone</label><div id="view_phone"></div></div>
+          <div><label>Email</label><div id="view_email" class="one-line"></div></div>
+          <div><label>Status</label><div id="view_status"></div></div>
+          <div><label>Source</label><div id="view_source"></div></div>
+          <div><label>BCG</label><div id="view_bcg"></div></div>
+        </div>
+
+        <div class="inline-section" style="margin-top:12px;">
+          <div class="inline-head"><span>Addresses</span></div>
+          <div id="view_addressesInline"></div>
+        </div>
+
+        <div class="inline-section" style="margin-top:12px;">
+          <div class="inline-head"><span>Notes</span></div>
+          <div id="view_notesInline"></div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="closeViewBtn2">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Notes Modal-->
+  <dialog  id="notesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal__header">
+        <span>Edit Notes</span>
+        <button id="closeNotesBtn" class="close-x" aria-label="Close">✕</button>
+      </div>
+  
+      <div class="modal__body">
+        <div id="notesList"></div>
+      </div>
+  
+      <div class="modal__footer">
+        <button id="addNoteBtn" class="btn btn--ghost">Add Note</button>
+        <button id="saveNotesBtn" class="btn btn--primary">Save</button>
+        <button id="cancelNotesBtn" class="btn btn--ghost">Cancel</button>
+      </div>
+    </div>
+  </dialog >
+
+  <!-- Addresses Modal -->
+  <dialog id="addressesModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal__header">
+        <span>Edit Addresses</span>
+        <button id="closeAddressesBtn" class="close-x" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal__body">
+        <div id="addressesList"></div>
+      </div>
+
+      <div class="modal__footer">
+        <button id="addAddressBtn"   type="button" class="btn btn--ghost">Add Address</button>
+        <button id="saveAddressBtn"  type="button" class="btn btn--primary">Save</button>
+        <button id="cancelAddressBtn" type="button" class="btn btn--ghost">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Email Lists Export Modal -->
+  <dialog id="emailListsModal"  class="modal-overlay"></dialog>
+
+
+  <div id="tabularSearchTab" class="tab-content" style="display:none;">
+    <h4>Free Style Search</h4>
+    <!-- Free search input is declared once -->
+    <input type="text" id="freeSearchInput" placeholder="Free style - Search all records..." style="width: 100%; padding: 5px; font-size: 12px; margin-bottom: 10px;" oninput="filterFreeSearch()">
+    <!-- Container for the results table -->
+    <div id="freeSearchTableContainer"></div>
+   </div>
+
+  </div>
+
+ 
+
+  <div id="loadingModal">
+    <div class="spinner">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <div id="errorModalWrapper">
+    <div id="errorModal">
+      <p id="errorMessage"></p>
+      <button onclick="closeErrorModal()">OK</button>
+    </div>
+  </div>
+
+</body>
+</html>

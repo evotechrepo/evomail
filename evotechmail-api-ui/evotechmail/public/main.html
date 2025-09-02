@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>EVOTECH US L.L.C. Mail Subscribers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <link rel="stylesheet" href="/evotechmail/css/app.css">
+  <link rel="stylesheet" href="/evotechmail/css/main.css">
+</head>
+<body>
+  <div class="main-wrap">
+    <div id="mainHeaderTab" class="tab-content" style="display:block;">
+        <div class="main-header">
+        <img src="/evotechmail/assets/evo.png" alt="Evotech">
+        <h1>Welcome</h1>
+        </div>
+    </div>
+
+    <div id="mainTab" class="tab-content" style="display:block;">
+        <div class="tiles">
+          <!-- No svgs
+            <button class="tile-btn" id="tileDash"  type="button" aria-label="Open Dashboard">Legacy Dashboard</button>
+            <button class="tile-btn" id="tileNewDashboard"  type="button" aria-label="New Dashboard">Dashboard</button>
+            <button class="tile-btn" id="tileEmail" type="button" aria-label="Email Utility">Email Utility</button>
+            <button class="tile-btn" id="tileInsert"  type="button" aria-label="Scan / Upload">Insert Mail</button>
+            <button class="tile-btn" id="tileBCGCompliance"  type="button" aria-label="BCG Compliance">USPS BCG Compliance</button>
+            <button class="tile-btn" id="tileReports"  type="button" aria-label="Reports">Reports</button>
+            <button class="tile-btn" id="tileAdmin" type="button" aria-label="Admin">Admin</button>
+            <button class="tile-btn" id="tileLogout" type="button" aria-label="Log out">Log out</button>
+          -->
+          <button class="tile-btn" id="tileDash" type="button" aria-label="Open Dashboard">
+            <span class="ico">
+              <!-- monitor -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+                <line x1="12" y1="16" x2="12" y2="20"></line>
+                <line x1="8"  y1="20" x2="16" y2="20"></line>
+              </svg>
+            </span>
+            <span>Legacy Dashboard</span>
+          </button>
+          
+          <button class="tile-btn" id="tileNewDashboard" type="button" aria-label="New Dashboard">
+            <span class="ico">
+              <!-- dashboard grid -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3"  y="3"  width="8" height="8" rx="1"></rect>
+                <rect x="13" y="3"  width="8" height="5" rx="1"></rect>
+                <rect x="13" y="10" width="8" height="11" rx="1"></rect>
+                <rect x="3"  y="13" width="8" height="8" rx="1"></rect>
+              </svg>
+            </span>
+            <span>Dashboard</span>
+          </button>
+          
+          <button class="tile-btn" id="tileInsert" type="button" aria-label="Scan / Upload">
+            <span class="ico">
+              <!-- upload to tray -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 19h18l-2-6H5l-2 6z"></path>
+                <path d="M12 3v8"></path>
+                <path d="M8 7l4-4 4 4"></path>
+              </svg>
+            </span>
+            <span>Insert Mail</span>
+          </button>
+          
+          <button class="tile-btn" id="tileBCGCompliance" type="button" aria-label="BCG Compliance">
+            <span class="ico">
+              <!-- shield check -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l7 4v5c0 5-7 9-7 9s-7-4-7-9V7l7-4z"></path>
+                <path d="M8.5 12.5l2.5 2.5 4.5-5"></path>
+              </svg>
+            </span>
+            <span>USPS BCG Compliance</span>
+          </button>
+          
+          <button class="tile-btn" id="tileEmail" type="button" aria-label="Email Utility" data-role="admin-only">
+            <span class="ico">
+              <!-- envelope -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                <path d="M3 7l9 7 9-7"></path>
+              </svg>
+            </span>
+            <span>Email Utility</span>
+          </button>
+
+          <button class="tile-btn" id="tileReports" type="button" aria-label="Reports" data-role="admin-only">
+            <span class="ico">
+              <!-- bars + trend -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 20V10"></path>
+                <path d="M10 20V4"></path>
+                <path d="M16 20v-6"></path>
+                <path d="M3 13l7-7 6 6 5-4"></path>
+              </svg>
+            </span>
+            <span>Reports</span>
+          </button>
+          
+          <button class="tile-btn" id="tileAdmin" type="button" aria-label="Admin" data-role="admin-only">
+            <span class="ico">
+              <!-- gear -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.2 2.2M16.8 16.8L19 19M5 19l2.2-2.2M16.8 7.2L19 5"></path>
+              </svg>
+            </span>
+            <span>Admin</span>
+          </button>
+          
+          <button class="tile-btn" id="tileLogout" type="button" aria-label="Log out">
+            <span class="ico">
+              <!-- door + arrow -->
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0b8a8f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="12" height="18" rx="2"></rect>
+                <path d="M12 12h8"></path>
+                <path d="M17 7l5 5-5 5"></path>
+              </svg>
+            </span>
+            <span>Log out</span>
+          </button>
+          
+        </div>
+
+        
+        <div class="tiles">
+        </div>
+        <div class="tiles">
+        </div>
+        <p></p>
+    
+        <div class="footer-actions">
+            <div class="tiles">
+                <!-- class="tile-btn tile-btn--small" -->
+                <!--<button class="tile-btn" id="tileLogout" type="button" aria-label="Log out">Log out</button>-->
+           </div>
+        </div>
+
+    </div>
+  </div>
+
+  <!-- put this script at the end of body (after the tiles) -->
+  <script src="/evotechmail/js/main.js" defer></script>
+  <script src="/evotechmail/js/auth.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Require an active session; redirects to login if not signed in
+        await ensureCurrentUser();
+        // your page init can go here
+    });
+  </script>
+  <script>
+  // auth guard
+    (async () => {
+      try {
+        const r = await fetch('/evotechmail/api/auth/me', { credentials:'include' });
+        const j = r.ok ? await r.json() : { ok:false };
+        if (!j.ok) return window.location.replace('index.html');
+      } catch { return window.location.replace('index.html'); }
+    })();
+  
+    // “coming soon” tiles
+    document.getElementById('tileEmail')?.addEventListener('click', e => {
+      e.preventDefault(); window.location.href = 'mail.html';
+    });
+
+    document.getElementById('tileInsert')?.addEventListener('click', e => {
+      e.preventDefault(); 
+      window.location.href = 'scan.html';
+    });
+    
+    document.getElementById('tileReports')?.addEventListener('click', e => {
+      e.preventDefault(); 
+      window.location.href = 'reporting.html';
+    });
+
+    document.getElementById('tileBCGCompliance')?.addEventListener('click', e => {
+      e.preventDefault(); 
+      window.location.href = 'compliance.html';
+    });
+
+    document.getElementById('tileNewDashboard')?.addEventListener('click', e => {
+      e.preventDefault(); 
+      window.location.href = 'newdashboard.html';
+    });
+  
+    // logout (tile style)
+    document.getElementById('tileLogout')?.addEventListener('click', async () => {
+      try { await fetch('/evotechmail/api/auth/logout', { method:'POST', credentials:'include' }); } catch {}
+      window.location.replace('index.html');
+    });
+
+    document.getElementById('tileDash')?.addEventListener('click', () => {
+     window.location.href = 'dashboard.html';
+    });
+
+    document.getElementById('tileAdmin')?.addEventListener('click', () => {
+     window.location.href = 'admin.html';
+    });
+    
+
+    document.addEventListener('DOMContentLoaded', async () => {
+    const email = await ensureCurrentUser({ redirectOn401: false });
+    //if (email) location.replace('/evotechmail/main.html');
+    });
+  </script>  
+</body>
+</html>

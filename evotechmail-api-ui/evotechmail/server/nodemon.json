@@ -1,0 +1,6 @@
+
+{
+  "watch": ["server.js", "routes-evomail.js"],
+  "ext": "js,mjs,json",
+  "ignore": ["node_modules"]
+}

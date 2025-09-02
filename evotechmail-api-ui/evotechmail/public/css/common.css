@@ -1,0 +1,35 @@
+    /* Modals (smaller, responsive) */
+    #alertModal .modal { width:min(420px, 92vw); }
+    #alertModal .modal__header span { font-size:16px; }
+    #alertModal .modal__body { padding-block: 10px; }
+    #alertModal .modal__footer { padding-top: 8px; }
+    @media (max-width:600px){
+      #alertModal .modal { width:min(340px, 94vw); border-radius:12px; }
+      #alertModal .modal__header, #alertModal .modal__body, #alertModal .modal__footer { padding: 10px 12px; }
+      #alertModal .modal__body svg { display:none; }
+    }
+
+    
+
+
+
+    /* Loading overlay */
+    .loading{position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.28); z-index:1000}
+    .loading[hidden]{display:none}
+    .loading__card{
+    width:min(92vw,360px); background:#fff; border-radius:16px; padding:16px 18px; text-align:center;
+    box-shadow:0 18px 60px rgba(0,0,0,.25)
+    }
+    .loading__title{margin:8px 0 4px; font-size:16px; color:#0b7285}
+    .loading__text{margin:0; font-size:13px; color:#475569}
+
+    /* Spinner */
+    .loading__spinner{
+    width:36px; height:36px; margin:2px auto 8px; border-radius:50%;
+    border:3px solid #e2e8f0; border-top-color:#0ea5b9; animation:spin .9s linear infinite
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Progress (optional) */
+    .loading__progress{margin-top:10px; height:8px; border-radius:999px; background:#e6edf3; overflow:hidden}
+    .loading__progress-bar{height:100%; background:#0ea5b9; transition:width .2s ease}

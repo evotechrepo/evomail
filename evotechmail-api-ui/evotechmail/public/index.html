@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EVOTECH US L.L.C. Mail Subscribers • Login</title>
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <link rel="stylesheet" href="/evotechmail/css/app.css">
+  <link rel="stylesheet" href="/evotechmail/css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+</head>
+<body>
+  <main class="auth-wrap">
+    <section class="auth-card" role="dialog" aria-labelledby="loginTitle">
+      <div class="auth-brand">
+        <img src="assets/evo2.png" styile="align-items:right" alt="Evotech logo">
+        <div>
+          <h1 id="loginTitle" class="auth-title">Evotech Mail Subscribers</h1>
+        </div>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="form-row">
+          <!--<label for="email">Email</label>-->
+          <input id="email" name="email" type="email" autocomplete="username" required placeholder="you@evotechservice.com">
+        </div>
+        <div class="form-row">
+          <!--<label for="password">Password</label>-->
+          <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="password">
+        </div>
+
+        <div class="actions">
+          <label class="checkbox">
+            <input id="remember" type="checkbox"> <span>Remember me</span>
+          </label>
+          <button id="loginBtn" type="submit" class="btn btn--primary">Sign in</button>
+        </div>
+
+        <div id="loginError" class="error" aria-live="polite"></div>
+        <div class="muted"><p>© <span>Copyright</span> <strong class="px-1 sitename">Evotech US L.L.C</strong> <span>All Rights Reserved</span></p></div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const form = document.getElementById('loginForm');
+      const btn  = document.getElementById('loginBtn');
+      const err  = document.getElementById('loginError');
+
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        err.textContent = '';
+        const email = (document.getElementById('email').value || '').trim();
+        const password = document.getElementById('password').value || '';
+        if (!email || !password){ err.textContent = 'Email and password are required.'; return; }
+
+        btn.disabled = true; btn.textContent = 'Signing in…';
+        try {
+          const r = await fetch('/evotechmail/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // receive HttpOnly session cookie if server sets one
+            body: JSON.stringify({ email, password, remember: document.getElementById('remember').checked })
+          });
+
+          const ct = r.headers.get('content-type') || '';
+          const data = ct.includes('json') ? await r.json() : {};
+          if (!r.ok || data.ok === false){
+            throw new Error(data.error || 'Invalid email or password.');
+          }
+
+          // Optional token support if your API returns it
+          if (data.token) localStorage.setItem('evomail_token', data.token);
+          if (data.user)  localStorage.setItem('evomail_user', JSON.stringify(data.user));
+
+          // go to the app
+          window.location.href = 'main.html';
+        } catch (ex){
+          err.textContent = ex.message || 'Sign-in failed.';
+        } finally {
+          btn.disabled = false; btn.textContent = 'Sign in';
+        }
+      });
+    })();
+  </script>
+  <script>
+    (async () => {
+      try {
+        const r = await fetch('/evotechmail/api/auth', { credentials: 'include' });
+        const j = r.ok ? await r.json() : { ok: false };
+        if (j.ok) window.location.replace('main.html'); // already logged in → go to app
+      } catch { /* stay on login */ }
+    })();
+  </script>
+  <script src="/evotechmail/js/auth.js"></script>    
+  <!-- Auth bootstrap (must come before the inline script below) -->
+  <script src="/evotechmail/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+    const email = await ensureCurrentUser({ redirectOn401: false });
+    if (email) location.replace('/evotechmail/main.html');
+    });
+    // Recalc min-height when the visual viewport changes (iOS Safari)
+    if (window.visualViewport) {
+        const el = document.querySelector('.auth-wrap');
+        const setH = () => el && (el.style.minHeight = window.visualViewport.height + 'px');
+        visualViewport.addEventListener('resize', setH);
+        visualViewport.addEventListener('scroll', setH);
+        setH();
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,139 @@
+/* shared container & tokens (lifted from scan.html) */
+*,*::before,*::after{box-sizing:border-box}
+:root{--gap:10px}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{min-height:100svh;display:grid;grid-template-rows:auto 1fr auto;gap:var(--gap);padding:16px;max-width:980px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px}
+header img{width:28px;height:28px;border-radius:6px}
+header h1{margin:0;font-size:18px;color:#0097A7}
+
+.card{padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.06);max-width:100%;overflow:hidden}
+.grid{display:grid;gap:10px;grid-template-columns:1fr}
+label{font-size:13px;color:#374151;display:block;margin-bottom:4px}
+input[type="text"],textarea,select{width:100%;min-height:40px;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:14px}
+textarea{min-height:100px;resize:vertical}
+.btn{border:1px solid #d1d5db;background:#f3f4f6;color:#111827;border-radius:10px;padding:10px 12px;cursor:pointer}
+.btn--primary{background:#0097A7;color:#fff;border-color:#0097A7}
+.muted{color:#6b7280;font-size:12px}
+
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.tile-btn{display:inline-flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer}
+.tile-btn img{height:40px;width:auto;display:block}
+
+.form-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Mobile sheets for dialog modals (Email Lists / Logs) */
+@media (max-width:640px){
+  dialog.modal-overlay{align-items:flex-end}
+  dialog .modal{width:100vw;border-radius:16px 16px 0 0;max-height:85vh;overflow:auto}
+  .btn,
+  .btn--primary{width:20%}
+}
+
+/* Compact info modal (same as scan) */
+#alertModal .modal{width:min(420px,92vw)}
+#alertModal .modal__header span{font-size:16px}
+#alertModal .modal__body{padding-block:10px}
+#alertModal .modal__footer{padding-top:8px}
+@media (max-width:600px){
+  #alertModal .modal{width:min(340px,94vw);border-radius:12px}
+  #alertModal .modal__header,#alertModal .modal__body,#alertModal .modal__footer{padding:10px 12px}
+  #alertModal .modal__body svg{display:none}
+}
+
+/* For email list logs, and view */
+/* Inline sheet (mobile = bottom sheet, desktop = right drawer) */
+.sheet{position:fixed; inset:0; display:grid; place-items:end center; background:rgba(0,0,0,.15); z-index:50}
+.sheet[hidden]{display:none}
+.sheet__inner{background:#fff; width:100%; max-width:560px; border-radius:16px 16px 0 0; box-shadow:0 12px 40px rgba(0,0,0,.25); transform:translateY(8%); animation:sheetIn .18s ease-out forwards}
+@keyframes sheetIn{to{transform:translateY(0)}}
+.sheet__header,.sheet__footer{padding:12px 14px; border-bottom:1px solid #eef2f6}
+.sheet__footer{border-top:1px solid #eef2f6; border-bottom:0;}
+.sheet__header{display:flex; align-items:center; gap:10px}
+.sheet__header h2{margin:0; font-size:16px; color:#0b7285; flex:1}
+.sheet__body{padding:12px 14px; max-height:62vh; overflow:auto}
+
+/* Desktop: convert to right drawer */
+@media (min-width: 900px){
+  .sheet{place-items:center end}
+  .sheet__inner{height:100vh; border-radius:0; max-width:900px}
+  .sheet__body{max-height:calc(100vh - 100px)}
+}
+
+/* Make the drawer a bit shorter than the viewport only on mobile,
+   so the backdrop above stays tappable */
+   @media (max-width: 899px){
+  .sheet{ place-items:end center; }            /* bottom-up sheet */
+  .sheet__inner{
+    width:100vw; max-width:100vw;
+    height:100vh;                 /* not full height = 96vh*/
+    margin-top:4vh;              /* tappable backdrop above */
+    border-radius:16px 16px 0 0; /* rounded top */
+  }
+  .sheet__header, .sheet__footer{ padding:8px 10px; }
+  .sheet__header h2{ font-size:14px; }
+  .sheet__body{
+    padding:8px 10px;
+    max-height:calc(96vh - 96px); /* header+footer allowance */
+    overflow:auto;
+  }
+}
+
+/* Small helpers */
+.sheet .btn--ghost{background:#f8fafc; border-color:#eef2f6}
+.badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#E0F2F1; color:#065f46; font-weight:600}
+.row{display:flex; gap:8px; flex-wrap:wrap}
+
+label{font-size:13px;color:#374151;display:block;margin-bottom:4px}
+#emailLogsTable {
+  width: 100%;
+  border: 1px solid rgba(8, 19, 19, 0.15); /* soft cyan */
+  border-radius: 6px;
+  border-collapse: separate;
+  box-shadow: 0 1px 3px rgba(8, 19, 19, 0.15); /* gentle glow */
+  font-size: 13px;
+  color: #374151;
+}
+
+#emailLogsTable th,
+#emailLogsTable td {
+  border-bottom: 1px solid rgba(8, 19, 19, 0.15); /* subtle row lines */
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+}
+
+#emailLogsTable thead {
+  background-color: rgba(8, 19, 19, 0.15); /* faint cyan tint */
+  color: #333;
+  font-weight: 600;
+}
+
+#emailLogsTable tbody tr:hover {
+  background-color: rgba(8, 19, 19, 0.15); /* soft hover effect */
+}
+
+
+.badge{ display:inline-block; padding:2px 8px; font-size:12px; line-height:18px; border-radius:999px; }
+  .badge--success{ background:#e6f7ee; color:#127c46; }
+  .badge--danger{  background:#fdecea; color:#a12622; }
+  /* Status badge flash */
+  .badge.pulse{ animation:pulse .7s ease; }
+  @keyframes pulse{ 0%{transform:scale(.95)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+/* Make the drawer a bit shorter than the viewport so the backdrop is tappable /
+.sheet{ place-items:end center; } /* bottom-up sheet /
+.sheet__inner{
+  width:100vw; max-width:100vw;
+  height:96vh;                 /* not full height /
+  margin-top:4vh;              /* leaves tappable backdrop area above /
+  border-radius:16px 16px 0 0; /* keep rounded top /
+}
+.sheet__header, .sheet__footer{ padding:8px 10px; }
+.sheet__header h2{ font-size:14px; }
+.sheet__body{
+  padding:8px 10px;
+  max-height:calc(96vh - 96px); /* header+footer allowance /
+  overflow:auto;
+}
+*/

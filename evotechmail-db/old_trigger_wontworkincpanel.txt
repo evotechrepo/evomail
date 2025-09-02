@@ -1,0 +1,146 @@
+CREATE OR REPLACE FUNCTION tg_touch_last_mod()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.last_mod_ts := now();
+  RETURN NEW;
+END;
+$$;
+
+DO $$
+BEGIN
+  -- add touch triggers where audit columns exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_subscriber'
+  ) THEN
+    CREATE TRIGGER trg_touch_subscriber
+      BEFORE UPDATE ON subscriber
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_subscriber_address'
+  ) THEN
+    CREATE TRIGGER trg_touch_subscriber_address
+      BEFORE UPDATE ON subscriber_address
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_subscriber_note'
+  ) THEN
+    CREATE TRIGGER trg_touch_subscriber_note
+      BEFORE UPDATE ON subscriber_note
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_status'
+  ) THEN
+    CREATE TRIGGER trg_touch_status
+      BEFORE UPDATE ON status
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_bcg_status'
+  ) THEN
+    CREATE TRIGGER trg_touch_bcg_status
+      BEFORE UPDATE ON bcg_status
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_mail_partner'
+  ) THEN
+    CREATE TRIGGER trg_touch_mail_partner
+      BEFORE UPDATE ON mail_partner
+      FOR EACH ROW EXECUTE FUNCTION evomail.tg_touch_last_mod();
+  END IF;
+  -----
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_mail_status'
+  ) THEN
+    CREATE TRIGGER trg_touch_mail_status
+      BEFORE UPDATE ON mail_status
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_mail_type'
+  ) THEN
+    CREATE TRIGGER trg_touch_mail_type
+      BEFORE UPDATE ON mail_type
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_subscriber_mail'
+  ) THEN
+    CREATE TRIGGER trg_touch_subscriber_mail
+      BEFORE UPDATE ON subscriber_mail
+      FOR EACH ROW EXECUTE FUNCTION tg_touch_last_mod();
+  END IF;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION subscriber_mail_status()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.fk_mail_status_id IS NOT NULL THEN
+      NEW.last_status_ts := now();
+    END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF NEW.fk_mail_status_id IS DISTINCT FROM OLD.fk_mail_status_id THEN
+      NEW.last_status_ts := now();
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_fk_mail_status_id'
+  ) THEN
+    CREATE TRIGGER trg_fk_mail_status_id
+      BEFORE UPDATE ON subscriber_mail
+      FOR EACH ROW EXECUTE FUNCTION subscriber_mail_status();
+  END IF;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION subscriber_status()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.fk_status_id IS NOT NULL THEN
+      NEW.last_status_ts := now();
+    END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF NEW.fk_status_id IS DISTINCT FROM OLD.fk_status_id THEN
+      NEW.last_status_ts := now();
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_fk_status_id'
+  ) THEN
+    CREATE TRIGGER trg_fk_mail_status_id
+      BEFORE UPDATE ON subscriber
+      FOR EACH ROW EXECUTE FUNCTION subscriber_status();
+  END IF;
+END;
+$$;

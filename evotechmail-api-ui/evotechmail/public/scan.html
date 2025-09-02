@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>EVOTECH US L.L.C. Mail Subscribers • Insert Mail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <link rel="stylesheet" href="/evotechmail/css/app.css">
+  <link rel="stylesheet" href="/evotechmail/css/scan.css">
+  <script src="/evotechmail/js/auth.js" defer></script>
+  <script src="/evotechmail/js/common.js" defer></script>
+  <script src="/evotechmail/js/scan.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Require an active session; redirects to login if not signed in
+        await ensureCurrentUser();
+        // your page init can go here
+    });
+  </script>  
+</head>
+<body>
+  <div class="wrap">
+      <header>
+        <img src="/evotechmail/assets/evo.png" alt="">
+        <h1>Insert Mail</h1>
+        <span class="muted" id="loadedCount" style="margin-left:auto"></span>
+      </header>
+      
+      <main>
+        <div class="search">
+          <input id="q" type="text" placeholder="Search PMB, name, or company…"/>
+          <button id="refreshBtn" class="btn btn--primary">Refresh</button> <!-- CHANGED -->
+        </div>
+      
+        <div class="list" id="list"></div>
+      
+        <div class="card" id="formCard" hidden>
+            <div class="preview">
+
+              <label for="fileInput" id="thumb" class="thumb" title="Tap to add">
+                <span class="ph">preview</span>
+                <img id="preview" alt="">
+              </label>
+              
+              <!-- NOTE: capture REMOVED by default -->
+              <input id="fileInput" type="file" accept="image/*" hidden>
+              
+              <div class="btnrow">
+                <!--<button id="takePhotoBtn" class="btn btn--primary">Take Photo</button>-->
+                <!--<button id="chooseLibBtn" class="btn">Choose from Library</button>-->
+                <button id="clearImgBtn" class="btn">Clear</button>
+                <div class="muted">Tip: you can take a photo or pick from your library.</div>
+              </div>
+              
+              
+              </div>              
+              <div class="grid" style="margin-top:10px;">
+                <div>
+                  <label>Mail Type</label>
+                  <select id="mailType"></select>
+                </div>
+                <div>
+                  <label>Weight (oz)</label>
+                  <input id="weight" type="number" step="0.01" min="0">
+                </div>
+                <div>
+                  <label>Length (in)</label>
+                  <input id="len" type="number" step="0.01" min="0">
+                </div>
+                <div>
+                  <label>Width (in)</label>
+                  <input id="wid" type="number" step="0.01" min="0">
+                </div>
+                <div>
+                  <label>Height (in)</label>
+                  <input id="hei" type="number" step="0.01" min="0">
+                </div>
+                <div class="wide">
+                  <button id="saveBtn" class="btn btn--primary">Insert Mail & Notify</button>
+                  <span id="saveMsg" class="muted" style="margin-left:8px;"></span>
+                </div>
+              </div>              
+          
+        </div>
+      </main>
+
+      <dialog id="alertModal" class="modal-overlay" aria-labelledby="alertTitle" aria-describedby="alertMsg">
+        <div class="modal" role="document">
+          <div class="modal__header">
+            <span id="alertTitle">Notice</span>
+            <button class="close-x" type="button" aria-label="Close">✕</button>
+          </div>
+          <div class="modal__body">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <!-- subtle info icon -->
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="#E0F2F1"></circle>
+                <text x="12" y="16" text-anchor="middle" font-size="12" fill="#006D75" font-weight="700">i</text>
+              </svg>
+              <div id="alertMsg" style="white-space:pre-wrap"></div>
+            </div>
+          </div>
+          <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" class="btn btn--primary" data-role="ok">OK</button>
+          </div>
+        </div>
+      </dialog>
+      
+      
+      
+    <footer>
+    <button class="btn btn--primary" onclick="history.back()">Back</button> <!-- CHANGED -->
+    </footer>
+    <!-- Loading Modal -->
+    </div>
+</body>
+</html>

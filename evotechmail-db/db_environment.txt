@@ -1,0 +1,146 @@
+Database Name = evotechs_utility
+evotechs_super/pa[mwsOPgm~i
+evotechs/pa[mwsOPgm~i
+
+###############################
+export PGPASSWORD="pa[mwsOPgm~i"
+psql -U evotechs_super -d evotechs_utility -h 127.0.0.200
+
+SELECT * FROM pg_timezone_names;
+
+
+Select current_timestamp;
+
+ALTER DATABASE evotechs_utility SET timezone TO 'America/New_York';
+
+Select current_timestamp;
+###############################
+
+
+SELECT  nspname AS schema_name, pg_catalog.pg_get_userbyid(nspowner) AS owner
+FROM  pg_catalog.pg_namespace
+ORDER BY  schema_name;
+
+
+
+###############################
+export PGPASSWORD=pa[mwsOPgm~i
+psql -U evotechs_super -d evotechs_utility -h 127.0.0.200
+
+
+
+GRANT CONNECT ON DATABASE evotechs_utility TO evotechs;
+GRANT USAGE ON SCHEMA evomail TO evotechs;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA evomail TO evotechs;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA evomail TO evotechs;
+###############################
+
+
+GRANT USAGE ON SCHEMA evomail TO evotechs_super;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA evomail TO evotechs_super;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA evomail TO evotechs_super;
+
+###################################################################################################################
+
+set "PGHOST=localhost"
+set "PGPORT=5444"
+set "PGDATABASE=evotechmail"
+set "PGUSER=postgres"
+set "PGPASSWORD=postgres"
+
+
+psql -h "%PGHOST%" -p %PGPORT% -U "%PGUSER%" -d "%PGDATABASE%"
+
+EXPORT FROM LOCAL:
+
+COPY evomail.google_sheet TO 'E:\dev\evogit\evotechmail-db\import\mochahostcopy.tsv' 
+WITH (
+  FORMAT csv,
+  DELIMITER E'\t',
+  NULL '',
+  HEADER true
+);
+
+
+## IN MOCHAHOST
+export PGPASSWORD="pa[mwsOPgm~i"
+
+psql -U evotechs_super -d evotechs_utility -h 127.0.0.200
+
+
+set search_path to evomail;
+
+DROP TABLE IF EXISTS google_sheet;
+
+CREATE TABLE IF NOT EXISTS google_sheet
+(
+  PMB              text,
+  first_name       text,
+  last_name        text,
+  Company          text,
+  Phone            text,
+  Email            text,
+  address          text,
+  status           text,
+  source           text,
+  bcg              text,
+  notes            text
+);
+
+
+COPY evomail.google_sheet FROM '/home/evotechs/evotechmail/mochahostcopy.tsv' 
+WITH (
+  FORMAT csv,
+  DELIMITER E'\t',
+  NULL '',
+  HEADER true
+);
+
+ERROR:  must be superuser to COPY to or from a file
+HINT:  Anyone can COPY to stdout or from stdin. psql's \copy command also works for anyone.
+
+try insert statements, next
+
+export PGPASSWORD="pa[mwsOPgm~i"
+
+psql -U evotechs_super -d evotechs_utility -h 127.0.0.200
+
+\i  /home/evotechs/evotechmail/mochahost_sheetInserts.sql
+
+
+
+RUN MIGRATION SCRIPTS THEN
+
+\i  /home/evotechs/evotechmail_db_migration_and_more/subscribers-db.sql
+\i  /home/evotechs/evotechmail_db_migration_and_more/migrate.sql
+
+GRANT CONNECT ON DATABASE evotechs_utility TO evotechs;
+GRANT USAGE ON SCHEMA evomail TO evotechs;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA evomail TO evotechs;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA evomail TO evotechs;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA evomail TO evotechs;
+
+###################################################################################################################
+
+
+EVOSIGNIN:
+DB_HOST=127.0.0.200
+DB_PORT=5432
+DB_USERNAME=evotechs_super
+DB_PASSWORD=pa[mwsOPgm~i
+DB_NAME=evotechs_utility
+DB_MODE=PROD
+DB_TYPE=postgres
+AUTH_SECRET=6xQy5QsWxPTA93763LWTSm1LUVYjA5cTu4bwYeW4gqL
+ENV=PROD
+SSL=false
+DB_SCHEMA=evosignin
+
+
+
+
+
+https://evotechservice.com/evotechmail
+
+logs/evotechmail/passenger.log
+

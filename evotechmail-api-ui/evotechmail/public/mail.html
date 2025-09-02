@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>EVOTECH US L.L.C. Mail Subscribers • Mail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/evotechmail/css/mail.css">
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <script src="/evotechmail/js/common.js" defer></script>
+  <script src="/evotechmail/js/mail.ui.js" defer></script>
+  <script src="/evotechmail/js/auth.js" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        await ensureCurrentUser();
+        // your mail page init can go here
+    });
+  </script>
+  <script>
+    // auth guard (stays here even if app.ui.js also guards)
+    (async () => {
+      try {
+        const r = await fetch('/evotechmail/api/auth/me', { credentials: 'include' });
+        const j = r.ok ? await r.json() : { ok:false };
+        if (!j.ok) return window.location.replace('/evotechmail/');
+      } catch { return window.location.replace('/evotechmail/'); }
+    })();
+  </script>
+</head>
+<body>
+   <div class="wrap">
+        <div class="page-head">
+        <header>
+            <img src="/evotechmail/assets/evo.png" alt="">
+            <h1>eMail Utility</h1>
+            <span class="muted" id="loadedCount" style="margin-left:auto"></span>
+        </header>
+        </div>
+
+        <div id="emailTab" class="tab-content" style="display:block;">
+          <div class="email-header">
+        </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div class="tools">
+          <!-- turn the images into accessible buttons that work great on mobile -->
+          <a href="#" class="tile-btn" onclick="openEmailListsModal();return false;" id="emailListsButton" aria-label="Build Email Lists">
+            <img src="/evotechmail/assets/email_lists.png" alt="" loading="lazy">
+          </a>
+          <a id="emailLogsButton" class="tile-btn" href="#" onclick="openEmailLogsModal();return false;" aria-label="Email Logs">
+            <img src="/evotechmail/assets/maillogs.png" alt="" loading="lazy">
+          </a>
+        </div>
+      
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label for="email_to">To</label>
+            <input type="text" id="email_to" placeholder="Comma-separated emails">
+          </div>
+          <div>
+            <label for="email_cc">CC</label>
+            <textarea id="email_cc" placeholder="Comma-separated emails"></textarea>
+          </div>
+          <div>
+            <label for="email_bcc">BCC</label>
+            <textarea id="email_bcc" placeholder="Comma-separated emails"></textarea>
+          </div>
+      
+          <!-- Groups -->
+          <div>
+            <label>BCC — Include Group Emails</label>
+            <div id="bccGroups" class="tools" style="flex-wrap:wrap"></div>
+          </div>
+      
+          <!-- Templates -->
+          <div class="grid">
+            <label style="display:inline-flex;align-items:center;gap:8px"><input type="checkbox" id="useTemplateCheckbox"> Use Office Closure Template</label>
+            <label style="display:inline-flex;align-items:center;gap:8px"><input type="checkbox" id="useRegisteredAgentTemplate"> Use Registered Agent Service Template</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label for="template_date" class="muted">Template Date</label>
+              <input type="date" id="template_date" disabled>
+            </div>
+          </div>
+      
+          <div>
+            <label for="email_subject">Subject</label>
+            <input type="text" id="email_subject" placeholder="Enter subject">
+          </div>
+          <div>
+            <label for="email_body">Body</label>
+            <textarea id="email_body" placeholder="Email body..."></textarea>
+          </div>
+      
+          <div>
+            <label class="muted">Email Preview</label>
+            <div id="email_preview" class="card" style="box-shadow:none;border-radius:10px"></div>
+          </div>
+      
+          <div class="form-actions">
+            <button type="button" class="btn btn--primary" onclick="sendEmail()">Send Email</button>
+            <button type="button" class="btn" onclick="clearEmailForm()">Clear</button>
+            <button class="btn btn--primary" onclick="history.back()">Back</button> <!-- CHANGED -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  <dialog id="alertModal" class="modal-overlay" aria-labelledby="alertTitle" aria-describedby="alertMsg">
+    <div class="modal" role="document">
+        <div class="modal__header">
+        <span id="alertTitle">Notice</span>
+        <button class="close-x" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="modal__body">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+            <!-- subtle info icon -->
+            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="#E0F2F1"></circle>
+            <text x="12" y="16" text-anchor="middle" font-size="12" fill="#006D75" font-weight="700">i</text>
+            </svg>
+            <div id="alertMsg" style="white-space:pre-wrap"></div>
+        </div>
+        </div>
+        <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+        <button type="button" class="btn btn--primary" data-role="ok">OK</button>
+        </div>
+    </div>
+  </dialog>
+
+    <div id="loadingModal">
+        <div class="spinner">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+    </div>
+
+    <!-- Inline Sheet Panel (replaces all old dialog modals) -->
+    <section id="sheet" class="sheet" hidden aria-live="polite">
+        <div class="sheet__inner" role="dialog" aria-modal="true">
+        <header class="sheet__header">
+            <h2 id="sheetTitle">Title</h2>
+            <button class="btn btn--primary"  id="sheetBackBtn" hidden>Back</button> <!-- class="btn btn--ghost"*/-->
+        </header>
+        <div id="sheetBody" class="sheet__body"></div>
+        <footer id="sheetFooter" class="sheet__footer"></footer>
+        </div>
+    </section>
+</body>
+</html>

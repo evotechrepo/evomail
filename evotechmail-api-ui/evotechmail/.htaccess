@@ -1,0 +1,24 @@
+# turn off directory listing
+Options -Indexes
+
+RewriteEngine On
+RewriteRule ^server/ - [F,L]
+RewriteRule ^tmp/    - [F,L]
+
+DirectoryIndex public/index.html
+
+# assets/css/js under /public
+RewriteRule ^(assets|js|css)/(.*)$ public/$1/$2 [L]
+
+# html under /public
+RewriteRule ^([A-Za-z0-9_\-]+)\.html$ public/$1.html [L]
+
+
+AddDefaultCharset UTF-8
+
+# Force charset for these types:
+AddType 'text/html; charset=UTF-8' .html
+AddType 'application/javascript; charset=UTF-8' .js
+AddType 'text/css; charset=UTF-8' .css
+AddType 'application/json; charset=UTF-8' .json
+

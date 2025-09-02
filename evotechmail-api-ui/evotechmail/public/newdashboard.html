@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>EVOTECH US L.L.C. Mail Subscribers • Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <link rel="icon" href="/evotechmail/assets/evo.png">
+  <script src="/evotechmail/js/auth.js" defer></script>
+  <script src="/evotechmail/js/common.js" defer></script>
+  <script src="/evotechmail/js/dashboard.js" defer></script>
+  <link rel="stylesheet" href="/evotechmail/css/common.css">
+  <style>
+    *,
+    *::before,
+    *::after { box-sizing: border-box; }
+    
+    :root { --gap: 10px; }
+    
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    
+    .wrap {
+      min-height: 100svh;
+      display:grid;
+      grid-auto-rows: auto;             /* ensure each child stacks naturally */
+      padding: 16px; gap: var(--gap);
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    
+    /* ===== PAGE HEADER (always first) ===== */
+    header {
+      display:flex; align-items:center; gap:12px;
+      margin: 0 0 12px 0;               /* small gap under header */
+    }
+    header img{ width:28px; height:28px; border-radius:6px; }
+    header h1{ font-size:18px; margin:0; color:#0097A7; }
+    
+    /* ===== TILES STRIP (sits right under header) ===== */
+    .tiles-grid{
+      display:grid;
+      /* Responsive, wraps automatically: 160–1fr columns */
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap:12px;
+      margin:0 0 12px 0;                /* tight space under tiles */
+    }
+    
+    /* Base tile */
+    .tile{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:72px;
+      box-shadow:0 1px 2px rgba(0,0,0,.03);
+    }
+    
+    /* Stat tiles (align content at the top, not centered) + BRAND SHADE */
+    .tile.stat {
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:flex-start;
+      /* brand shade + border */
+       /*background:#dcf7fa;        light shade of #0097A7 */
+       /* border-color:#b2ebf2;     subtle teal border */
+    }
+  
+    .tile.partner{ padding:8px; }
+    .tile.partner img{ max-width:100%; max-height:48px; object-fit:contain; display:block; margin:auto; }
+    
+    /* Stat internals */
+    .stat-top{
+      display:flex; align-items:center; gap:8px;
+      color:#0097A7;              /* brand teal */
+      font-weight:700;            /* bold header */
+      margin-bottom:6px;
+    }
+    .stat .label{ font-size:12px; text-transform:uppercase; letter-spacing:.02em; }
+  
+    /* CONTENT NOT BOLD + preserve line breaks */
+    .tile .value {
+      font-size:14px;
+      font-weight:400;            /* normal weight (not bold) */
+      color:#111827;
+      white-space:pre-line;       /* preserve \n as line breaks */
+      line-height:1.4;
+    }
+    
+    /* Hover */
+    .tile:hover{ border-color:#d1d5db; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+    
+    #backToMain img{ opacity:.9; }
+    #backToMain:hover img{ opacity:1; }
+    
+    /* Add Subscriber tile */
+    #addSubscriberTile{
+      background:#f9fafb;
+      color:#0ea5a4;
+      cursor:pointer;
+      transition:all .2s ease;
+    }
+    #addSubscriberTile:hover{ background:#e0f2f1; color:#0d9488; }
+    #addSubscriberTile svg{ display:block; margin:auto; }
+    
+    /* ===== SEARCH BAR (directly under tiles) ===== */
+    .search { display:flex; gap:8px; flex-wrap:wrap; margin-top:0; }
+    .search input{
+      flex:1 1 260px; height:40px; padding:8px 10px;
+      border:1px solid #d1d5db; border-radius:10px; font-size:14px;
+      width:100%;
+    }
+    
+    /* ===== LIST / PILLS ===== */
+    .list { display:grid; gap:8px; margin-top:10px; }
+    .pill{
+      padding:12px; border:1px solid #e5e7eb; border-radius:14px; background:#fff;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,.05);
+      cursor: pointer;
+    }
+    .pill .left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .pill .pmb { background:#E0F2F1; color:#065f46; font-weight:700; padding:4px 8px; border-radius:999px; }
+    .pill .name { font-weight:600; }
+    .pill .co { color:#6b7280; font-size:13px; }
+    
+    /* right-side actions inside the pill */
+    .pill .right-actions{ display:flex; gap:8px; align-items:center; margin-left:auto; }
+    .icon-btn{ background:transparent; border:0; padding:4px; border-radius:6px; cursor:pointer; }
+    .icon-btn:hover{ background:#f3f4f6; }
+    .icon-btn.disabled, .icon-btn:disabled{ opacity:.45; cursor:not-allowed; }
+    
+    /* closed-both highlight */
+    .pill.pill-inactive{ background:#fff1f2; border-color:#fecdd3; }
+    
+
+    .pill{transition:background-color .15s ease,border-color .15s ease,box-shadow .2s ease,transform .12s ease;will-change:transform,box-shadow;}
+    @media (hover:hover){.pill:hover{background:#f3f4f6;border-color:#9ca3af;box-shadow:0 8px 22px rgba(0,0,0,.12);transform:translateY(-1px);}}
+    .pill:active{transform:translateY(0);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+    .pill:focus-visible{outline:none;border-color:#0ea5b9;box-shadow:0 0 0 3px rgba(14,165,185,.22),0 8px 22px rgba(0,0,0,.12);background:#fff;}
+    @media (hover:hover){.pill.pill-inactive:hover{background:#fecdd3;border-color:#fda4af;}}
+
+
+
+    /* ===== CARD / FORMS ===== */
+    .card{
+      margin-top:12px; padding:12px; border:1px solid #e5e7eb; border-radius:12px;
+      background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.06);
+      max-width: 100%; overflow: hidden;
+    }
+    
+    .grid{ display:grid; gap:10px; grid-template-columns:1fr; }
+    label{ font-size:13px; color:#374151; display:block; margin-bottom:4px; }
+    input[type="number"], select, input[type="text"]{
+      width:100%; height:40px; border:1px solid #d1d5db; border-radius:10px; padding:8px 10px; font-size:14px;
+    }
+    
+    /* Preview column */
+    .preview{ display:flex; gap:12px; align-items:flex-start; }
+    .thumb{
+      width:140px; height:140px; border-radius:10px; border:1px solid #e5e7eb; background:#f8fafc;
+      display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:12px;
+      overflow:hidden; user-select:none; cursor:pointer;
+    }
+    .thumb img{ width:100%; height:100%; object-fit:cover; display:none; }
+    .thumb.has-img img{ display:block; } .thumb.has-img .ph{ display:none; }
+    
+    /* Buttons / misc */
+    .btnrow { display:flex; flex-direction:column; gap:8px; }
+    .btn{ border:1px solid #d1d5db; background:#f3f4f6; color:#111827; border-radius:10px; padding:10px 12px; cursor:pointer; }
+    .btn--primary{ background:#0097A7; color:#fff; border-color:#0097A7;}
+    .btn--primary--sm{ background:#0097A7; color:#fff; border-color:#0097A7;}
+    .btn--primary--smm{ background:#0097A7; color:#fff; border-color:#0097A7;}
+    .muted{ color:#6b7280; font-size:12px; }
+    
+    /* ===== Responsive tweaks ===== */
+    /* Desktop: give stats more width per row if you want */
+    @media (min-width: 1024px){
+      .tiles-grid{ grid-template-columns: repeat(12, 1fr); }
+      .tile.stat{ grid-column: span 4; }     /* 3 stats across */
+      .tile.partner{ grid-column: span 2; }  /* 6 partners across */
+      /* tighter stat tiles on desktop */
+      .tile.stat { min-height:50px; padding:8px 10px; }
+      .tile.stat .stat-top svg { width:14px; height:14px; }
+      .tile.stat .label { font-size:11px; }
+      .tile.stat .value { font-size:13px; }
+    }
+    
+    /* Small screens: everything flows with auto-fill */
+    @media (max-width: 640px){
+      .btn , .btn--primary { width:100%; } .btn--primary--sm{width:10%} .btn--primary--smm{width:15%}
+      .tiles-grid{ gap:10px; }               /* slightly tighter on phones */
+    }
+
+    /* Details pane that replaces the results list */
+    .view-pane { padding:16px; }
+    .view-header{
+      display:flex; align-items:center; gap:10px; margin-bottom:10px;
+    }
+    .view-title{ margin:0; font-size:16px; font-weight:700; color:#0097A7; }
+
+    /* Two-column on desktop, single on mobile */
+    .view-grid{
+      display:grid; gap:10px;
+      grid-template-columns: 1fr;
+      font-size:14px;
+    }
+    .view-grid label{ font-size:12px; color:#374151; display:block; margin-bottom:4px; }
+    .inline-section{ margin-top:12px; }
+    .inline-head{ font-weight:700; color:#374151; margin-bottom:6px; }
+
+    /* Desktop split */
+    @media (min-width: 900px){
+      .view-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    /* Simple tags */
+    .badge{
+      display:inline-block; padding:2px 8px; font-size:12px; border-radius:9999px;
+      background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe;
+    }
+    .meta{ color:#6b7280; font-size:12px; }
+    .ro-value{ white-space:pre-wrap; word-break:break-word; }
+
+    /* Inline details card that appears under the clicked pill */
+    .inline-details {
+      margin-top: 10px;
+      padding: 12px 14px;
+    }
+    .inline-details .view-header{
+      display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    }
+    .inline-details .view-title{
+      margin:0; font-size:16px; font-weight:700; color:#0097A7;
+    }
+
+    /* Grid inside details (1 col mobile, 2 cols desktop) */
+    .inline-details .view-grid{
+      display:grid; gap:10px; grid-template-columns: 1fr; font-size:14px;
+    }
+    .inline-details label{ font-size:12px; color:#374151; display:block; margin-bottom:4px; }
+    .inline-details .inline-section{ margin-top:12px; }
+    .inline-details .inline-head{ font-weight:700; color:#374151; margin-bottom:6px; }
+
+    @media (min-width: 900px){
+      .inline-details .view-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    /* Hide helper */
+    .is-hidden{ display:none !important; }
+
+    /* Inline Add form grid (1 col mobile, 2 cols desktop) */
+    .add-grid{
+      display:grid; gap:10px; grid-template-columns: 1fr;
+    }
+    .add-grid .full{ grid-column: 1 / -1; }
+
+    @media (min-width: 900px){
+      .add-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    /* Optional: give Add pane a light brand hint */
+    #addPane .view-title{ color:#0097A7; }
+
+    /* Ensure the HTML hidden attribute always hides elements */
+    [hidden]{ display:none !important; }
+
+    /* Small icon-only buttons used in inline editors */
+    .btn.btn--sm { padding:6px 8px; border-radius:8px; font-size:12px; }
+    .btn.icon-only { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; }
+    .inline-controls { display:flex; gap:8px; margin-top:8px; }
+    .note-card .note-text { width:100%; box-sizing:border-box; }
+
+
+  /* sheets for editing addresses and notes */
+  /* Inline sheet (mobile = bottom sheet, desktop = right drawer) */
+  .sheet{position:fixed; inset:0; display:grid; place-items:end center; background:rgba(0,0,0,.15); z-index:50}
+  .sheet[hidden]{display:none}
+  .sheet__inner{background:#fff; width:100%; max-width:560px; border-radius:16px 16px 0 0; box-shadow:0 12px 40px rgba(0,0,0,.25); transform:translateY(8%); animation:sheetIn .18s ease-out forwards}
+  @keyframes sheetIn{to{transform:translateY(0)}}
+  .sheet__header,.sheet__footer{padding:12px 14px; border-bottom:1px solid #eef2f6}
+  .sheet__footer{border-top:1px solid #eef2f6; border-bottom:0;}
+  .sheet__header{display:flex; align-items:center; gap:10px}
+  .sheet__header h2{margin:0; font-size:16px; color:#0b7285; flex:1}
+  .sheet__body{padding:12px 14px; max-height:62vh; overflow:auto}
+
+  /* Desktop: convert to right drawer */
+  @media (min-width: 900px){
+    .sheet{place-items:center end}
+    .sheet__inner{height:100vh; border-radius:0; max-width:900px}
+    .sheet__body{max-height:calc(100vh - 100px)}
+  }
+
+  /* Make the drawer a bit shorter than the viewport only on mobile,
+    so the backdrop above stays tappable */
+    @media (max-width: 899px){
+    .sheet{ place-items:end center; }            /* bottom-up sheet */
+    .sheet__inner{
+      width:100vw; max-width:100vw;
+      height:100vh;                 /* not full height = 96vh*/
+      margin-top:4vh;              /* tappable backdrop above */
+      border-radius:16px 16px 0 0; /* rounded top */
+    }
+    .sheet__header, .sheet__footer{ padding:8px 10px; }
+    .sheet__header h2{ font-size:14px; }
+    .sheet__body{
+      padding:8px 10px;
+      max-height:calc(96vh - 96px); /* header+footer allowance */
+      overflow:auto;
+    }
+  }
+
+  /* Sheet polish: sticky header/footer, snappier desktop drawer */
+  .sheet__inner{
+    display:flex; flex-direction:column;
+  }
+  .sheet__header, .sheet__footer{
+    position:sticky; background:#fff; z-index:1;
+  }
+  .sheet__header{ top:0; }
+  .sheet__footer{ bottom:0; }
+
+  @media (min-width: 900px){
+    .sheet__inner{ max-width: 720px; border-left: 1px solid #eef2f6; }
+    .sheet{ place-items: stretch end; }
+  }
+
+
+  /* Soft, full-width compiled textareas */
+  .ta-soft{
+    width:100%;
+    display:block;
+    padding:10px 12px;
+    border:1px solid #e6edf3;
+    border-radius:12px;
+    background:#fbfdff;
+    color:#111827;
+    font-size:14px;
+    line-height:1.5;
+    resize:vertical;
+    white-space:pre-wrap;   /* keep line breaks */
+    box-shadow:0 1px 1px rgba(0,0,0,0.02);
+    transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .ta-soft::placeholder{ color:#9aa4b2; }
+  .ta-soft[readonly]{ background:#f8fafc; }
+  .ta-soft.is-clickable{ cursor:pointer; }
+  .ta-soft.is-clickable:hover{ border-color:#cbd5e1; background:#ffffff; }
+  .ta-soft:focus{ outline:none; border-color:#0ea5b9; box-shadow:0 0 0 3px rgba(14,165,185,.15); background:#fff; }
+
+  /* ===========================
+   Inbox (inline view)
+   Scoped to #inboxPane so it won't affect other cards
+   =========================== */
+   /* Inbox inline — compact */
+    #inboxPane .view-title{color:#0b8a8f;font-weight:700;letter-spacing:.2px}
+    #inboxPane .mail-row{display:grid;grid-template-columns:180px 1fr;column-gap:24px;row-gap:10px;align-items:start;padding:16px 12px;border-bottom:1px solid #eef2f7}
+    #inboxPane .mail-row:last-child{border-bottom:0}
+    #inboxPane .thumb{width:180px}
+    #inboxPane .thumb button.thumb{display:block;width:100%;padding:0;border:0;background:0;cursor:pointer}
+    #inboxPane .thumb img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);transition:transform .18s ease}
+    #inboxPane .thumb img:hover{transform:scale(1.02)}
+    #inboxPane .thumb .ph{width:100%;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;border:1px dashed #d1d5db;border-radius:12px;color:#6b7280;font-size:12px;background:#fafafa}
+    #inboxPane .mail-meta .hdr{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
+    #inboxPane .mail-meta .badge{display:inline-block;padding:2px 10px;font:700 12px/1 system-ui;color:#0b8a8f;background:#e0f2f1;border-radius:999px}
+    #inboxPane .mail-meta .meta{color:#6b7280;font-size:12px}
+    #inboxPane .mail-meta label{display:block;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:2px}
+    #inboxPane .mail-meta .kvs{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px;margin:2px 0 4px}
+    #inboxPane .mail-meta .kv div{font-weight:600}
+    #inboxPane .view-header{display:flex;align-items:center;gap:12px;padding:8px 12px 6px;position:sticky;top:0;z-index:1;background:#fff;border-bottom:1px solid #eef2f7}
+    @media (max-width:1024px){#inboxPane .mail-row{grid-template-columns:160px 1fr;column-gap:20px}#inboxPane .thumb{width:160px}}
+    @media (max-width:720px){#inboxPane .mail-row{grid-template-columns:1fr}#inboxPane .thumb{width:100%}#inboxPane .mail-meta .kvs{grid-template-columns:1fr 1fr}}
+    @media (max-width:480px){#inboxPane .mail-meta .kvs{grid-template-columns:1fr}#inboxPane .mail-meta .badge{font-size:11px;padding:2px 8px}#inboxPane .mail-meta .meta{font-size:11px}}
+    /* make inline panes inside the results grid span full width */
+    #list .inline-details { grid-column: 1 / -1; }
+    /* safety: keep the list as a grid with spacing */
+    #list { display: grid; gap: 18px; }
+    /* utility used by JS when hiding non-host pills */
+    .is-hidden { display: none !important; }
+    #list { display:grid; gap:18px; }
+    #inboxPane .inbox-filters{display:flex;gap:8px;align-items:center;padding:10px 12px 0;flex-wrap:wrap}
+    #inboxPane .inbox-filters .ctl{padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px}
+    #inboxPane .inbox-filters .meta{margin-left:auto;color:#6b7280;font-size:12px}
+    @media (max-width:720px){#inboxPane .inbox-filters .meta{margin-left:0;width:100%;text-align:right}}
+
+    #inboxPane .count-badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#e0f2f1;color:#0b8a8f;font-weight:700;font-size:12px;vertical-align:middle}
+    #inboxPane .inbox-filters{display:flex;gap:8px;align-items:center;padding:10px 12px 0;flex-wrap:wrap}
+    #inboxPane .inbox-filters .ctl{padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px}
+    #inboxPane .inbox-filters .meta{margin-left:auto;color:#6b7280;font-size:12px}
+    @media (max-width:720px){#inboxPane .inbox-filters .meta{margin-left:0;width:100%;text-align:right}}
+
+    /* action bar under each mail row */
+    #inboxPane .actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+    #inboxPane .actions .act-status{min-width:160px;padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px}
+    #inboxPane .actions .act-comment{flex:1;min-width:180px;padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px}
+    #inboxPane .actions .apply-act{padding:6px 10px;border:0;border-radius:8px;background:#0b8a8f;color:#fff;font-weight:700;cursor:pointer}
+    #inboxPane .actions .apply-act:disabled{opacity:.5;cursor:not-allowed}
+    #inboxPane .actions .act-msg{color:#6b7280;font-size:12px;margin-left:auto}
+    @media (max-width:720px){#inboxPane .actions .act-msg{width:100%;text-align:right;margin-left:0}}
+    #list{ display:grid; gap:18px; }
+    #list .inline-details{ grid-column: 1 / -1; }
+    #inboxPane.card.inline-details{ display:block; width:100%; }
+    #inboxPane .actions:has(.apply-act[disabled]) .act-status[disabled]{opacity:.6}
+    #inboxPane .actions:has(.apply-act[disabled]) .act-comment[disabled]{opacity:.6}
+
+    /* ===== Quick Links Curtain (center drawer) — compact CSS ===== */
+    /* Handle (grab tab) */
+    #quickLinksHandle.ql-handle{position:fixed;z-index:5000;top:10px;left:50%;transform:translateX(-50%);min-width:84px;height:36px;border:0;border-radius:999px;padding:0 12px;background:#0b8a8f;color:#fff;display:flex;gap:8px;align-items:center;justify-content:center;font:700 13px/1 system-ui;box-shadow:0 8px 28px rgba(0,0,0,.18);cursor:pointer}
+    #quickLinksHandle .ql-ic{display:inline-block;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+    #quickLinksHandle[aria-expanded="true"] .ql-ic{transform:rotate(180deg)}
+    /* Curtain panel (closed by default; opens when handle aria-expanded=true) */
+    #quickLinksCurtain.ql-curtain{position:fixed;z-index:4999;top:0;left:50%;transform:translate(-50%,-12px);opacity:0;pointer-events:none;width:clamp(320px,72vw,760px);max-height:min(70vh,560px);overflow:auto;border:1px solid #e5e7eb;border-radius:14px;background:#fff;box-shadow:0 28px 80px rgba(0,0,0,.22);transition:opacity .18s ease,transform .18s ease}
+    #quickLinksHandle[aria-expanded="true"]+#quickLinksCurtain{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+    /* Backdrop (optional, click to close) */
+    .ql-backdrop{position:fixed;inset:0;z-index:4998;background:#000;opacity:0;pointer-events:none;transition:opacity .18s}
+    #quickLinksHandle[aria-expanded="true"]~.ql-backdrop{opacity:.25;pointer-events:auto}
+    /* Panel header + grid */
+    .ql-curtain .ql-head{position:sticky;top:0;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eef2f7;background:#fff}
+    .ql-curtain .ql-close{margin-left:auto;border:0;background:#f3f4f6;border-radius:8px;padding:6px 8px;cursor:pointer}
+    .ql-curtain .ql-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px}
+    .ql-curtain .ql-item{display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04);transition:transform .15s,box-shadow .15s}
+    .ql-curtain .ql-item:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.08)}
+    .ql-curtain .ql-item img{width:72px;height:72px;object-fit:contain}
+    .ql-curtain .ql-item .label{font:600 13px/1.2 system-ui;color:#374151;text-align:center}
+    .ql-curtain .logo-fallback{width:72px;height:72px;display:grid;place-items:center;border-radius:12px;background:#e0f2f1;color:#0b8a8f;font:800 16px/1 system-ui}
+    /* Mobile: full-width strip, larger tap target for handle */
+    @media (max-width:560px){
+      #quickLinksHandle.ql-handle{min-width:60px;height:26px;font-size:12px;padding:0 10px;border-radius:10px}
+      #quickLinksCurtain.ql-curtain{left:8px;right:8px;width:auto;transform:translate(0,-12px)}
+      #quickLinksHandle[aria-expanded="true"]+#quickLinksCurtain{transform:translate(0,0)}
+      .ql-curtain .ql-grid{grid-template-columns:repeat(3,1fr)}
+    }
+    /* Accessibility + reduced motion */
+    .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media (prefers-reduced-motion:reduce){
+      #quickLinksHandle .ql-ic{transition:none}
+      #quickLinksCurtain.ql-curtain,.ql-backdrop{transition:none}
+    }
+    /* Mobile tweak — also smaller than before */
+    @media (max-width:560px){
+      #quickLinksHandle.ql-handle{min-width:60px;height:32px;font-size:12px}
+    }
+
+    .pill { cursor: pointer; }
+    .pill .right-actions { cursor: default; }
+
+    /* ===== Back-to-top drawer (center-bottom) ===== */
+    .bt-handle{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%);z-index:5000;min-width:56px;height:40px;padding:0 14px;border:0;
+      border-radius:999px;background:#0b8a8f;color:#fff;display:flex;align-items:center;justify-content:center;
+      box-shadow:0 8px 24px rgba(0,0,0,.2);cursor:pointer;opacity:0;pointer-events:none;
+      transition:opacity .18s ease,transform .18s ease}
+    .bt-handle.is-show{opacity:1;pointer-events:auto;transform:translate(-50%,-2px)}
+    .bt-ic{font:700 16px/1 system-ui;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+    .bt-handle:hover .bt-ic,.bt-handle:focus-visible .bt-ic{transform:translateY(-2px)}
+    /* gentle idle bob */
+    .bt-handle.is-show:not(:hover):not(:focus-visible) .bt-ic{animation:btBob 6s infinite 1.2s}
+    @keyframes btBob{0%,78%,100%{transform:translateY(0)}82%{transform:translateY(-3px)}86%{transform:translateY(0)}90%{transform:translateY(-2px)}94%{transform:translateY(0)}}
+    /* mobile sizing */
+    @media (max-width:560px){.bt-handle{min-width:60px;height:30px}}
+    /* respect reduced motion */
+    @media (prefers-reduced-motion:reduce){.bt-handle,.bt-ic{transition:none;animation:none}}
+
+    @media (max-width: 768px){
+      input[type="text"], select, textarea { font-size: 16px; }
+    }
+  </style>
+      
+    
+ 
+</head>
+<body>
+  <div class="wrap">
+      <header>
+        <img src="/evotechmail/assets/evo.png" alt="">
+        <h1>Dashboard</h1>
+        <span class="muted" id="loadedCount" style="margin-left:auto"></span>
+      </header>
+
+      <!-- Tiles strip -->
+      <section id="dashboardTiles" class="tiles-grid">
+        <!-- Stats -->
+        <div class="tile stat" id="activeSubscribersTile">
+          <div class="stat-top">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5z"/></svg>
+            <span class="label">Active</span>
+          </div>
+          <div class="value" id="activeSubscribersValue">—</div>
+        </div>
+
+        <div class="tile stat" id="allSubscribersTile">
+          <div class="stat-top">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zM8 11c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.91 1.97 3.45V19h6v-2.5C23 14.17 18.33 13 16 13z"/></svg>
+            <span class="label">All</span>
+          </div>
+          <div class="value" id="allSubscribersValue">—</div>
+        </div>
+
+        <div class="tile stat" id="uspsBcgActionsTile">
+          <div class="stat-top">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 7l5 5-5 5-1.41-1.41L13.17 13H6v-2h7.17l-2.58-2.59z"/></svg>
+            <span class="label">BCG actions</span>
+          </div>
+          <div class="value" id="uspsBcgActionsValue">—</div>
+        </div>
+      </section>
+      
+      <main>
+        <div class="search">
+          <!--<input id="q" type="text" placeholder="Search PMB, name, or company…"/> -->
+          <button id="dashback" class="btn btn--primary--sm" onclick="history.back()">Back</button> <!-- CHANGED -->
+          <input  id="q" type="text" placeholder="Search PMB, name, company, etc…"/>
+          <button id="refreshBtn" class="btn btn--primary--sm">↻</button>
+          <button id="addSubscriberTile" class="btn btn--primary" aria-label="Add Subscriber" title="Add Subscriber" onclick="openAddInline()">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="currentColor" d="M11 11V6a1 1 0 1 1 2 0v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5z"/>
+            </svg>
+          </button>
+        </div>
+      
+        <div class="list" id="list"></div>
+        <!-- Subscriber details (replaces list when viewing) -->
+        <section id="detailsPane" class="card view-pane" hidden>
+          <div class="inline-section">
+            <button id="backToResultsBtn" class="btn">← Back</button>
+          </div>
+          <div class="view-header">
+            <h2 id="view_title" class="view-title">Subscriber</h2>
+          </div>
+
+          <div class="view-grid">
+            <div><label>PMB</label><div id="view_pmb"></div></div>
+            <div><label>Name</label><div id="view_name"></div></div>
+            <div><label>Company</label><div id="view_company"></div></div>
+            <div><label>Phone</label><div id="view_phone"></div></div>
+            <div><label>Email</label><div id="view_email" class="one-line"></div></div>
+            <div><label>Status</label><div id="view_status"></div></div>
+            <div><label>Source</label><div id="view_source"></div></div>
+            <div><label>BCG</label><div id="view_bcg"></div></div>
+          </div>
+
+          <div class="inline-section">
+            <div class="inline-head"><span>Addresses</span></div>
+            <div id="view_addressesInline"></div>
+          </div>
+
+          <div class="inline-section">
+            <div class="inline-head"><span>Notes</span></div>
+            <div id="view_notesInline"></div>
+          </div>
+
+        </section>
+
+        <section id="addPane" class="card inline-details" hidden>
+          <div class="view-header">
+            <button class="btn" id="addBackBtn">← Back</button>
+            <h2 class="view-title">Add Subscriber</h2>
+          </div>
+
+          <div class="add-grid">
+            <div>
+              <label for="add_pmb">PMB</label>
+              <input type="text" id="add_pmb" placeholder="Enter PMB" oninput="autoPopulateAddSource()">
+            </div>
+
+            <div>
+              <label for="add_source">Source</label>
+              <select id="add_source" onchange="forceCorrectSource()">
+                <option value="">Select Source</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="add_firstName">First Name</label>
+              <input type="text" id="add_firstName" placeholder="Enter First Name">
+            </div>
+
+            <div>
+              <label for="add_lastName">Last Name</label>
+              <input type="text" id="add_lastName" placeholder="Enter Last Name">
+            </div>
+
+            <div>
+              <label for="add_company">Company</label>
+              <input type="text" id="add_company" placeholder="Enter Company (defaults to Individual)">
+            </div>
+
+            <div>
+              <label for="add_phone">Phone Number</label>
+              <input type="text" id="add_phone" placeholder="Enter Phone Number">
+            </div>
+
+            <div>
+              <label for="add_email">Email</label>
+              <input type="text" id="add_email" placeholder="Enter Email">
+            </div>
+
+            <div>
+              <label for="add_status">Status</label>
+              <select id="add_status">
+                <option value="">Select Status</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="add_bcg">BCG</label>
+              <input type="text" id="add_bcg" value="New" disabled>
+            </div>
+
+            <div class="full">
+              <label for="add_primaryAddress">Primary Address</label>
+              <textarea id="add_primaryAddress" rows="4" placeholder="Enter Primary Address" class="ta-soft is-clickable"></textarea>
+            </div>
+
+            <div class="full">
+              <label for="add_notes">Notes</label>
+              <textarea id="add_notes" rows="4" placeholder="Enter Notes" class="ta-soft is-clickable"></textarea>
+            </div>
+          </div>
+
+          <div class="btnrow" style="margin-top:10px;">
+            <button class="btn btn--primary" id="addSaveBtn">Add Subscriber</button>
+            <button class="btn" id="addCancelBtn">Cancel</button>
+          </div>
+        </section>
+
+
+        <section id="editPane" class="card inline-details" hidden>
+          <div class="view-header">
+            <button class="btn" id="editBackBtn">← Back</button>
+            <h2 class="view-title">Edit Subscriber</h2>
+          </div>
+
+          <input type="hidden" id="edit_subscriber_id" />
+
+          <div class="add-grid">
+            <div>
+              <label for="edit_pmb">PMB</label>
+              <input type="text" id="edit_pmb" readonly disabled>
+            </div>
+
+            <div>
+              <label for="edit_source">Source</label>
+              <select id="edit_source" disabled>
+                <option value="">Select Source</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="edit_firstName">First Name</label>
+              <input type="text" id="edit_firstName" placeholder="Enter First Name">
+            </div>
+
+            <div>
+              <label for="edit_lastName">Last Name</label>
+              <input type="text" id="edit_lastName" placeholder="Enter Last Name">
+            </div>
+
+            <div>
+              <label for="edit_company">Company</label>
+              <input type="text" id="edit_company" placeholder="Enter Company (defaults to Individual)">
+            </div>
+
+            <div>
+              <label for="edit_phone">Phone Number</label>
+              <input type="text" id="edit_phone" placeholder="Enter Phone Number">
+            </div>
+
+            <div>
+              <label for="edit_email">Email</label>
+              <input type="text" id="edit_email" placeholder="Enter Email">
+            </div>
+
+            <div>
+              <label for="edit_status">Status</label>
+              <select id="edit_status">
+                <option value="">Select Status</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="edit_bcg">BCG</label>
+              <select id="edit_bcg">
+                <option value="">Select BCG</option>
+              </select>
+            </div>
+
+            <div class="full">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label for="edit_primaryAddress" style="margin:0;">Addresses</label>
+              </div>
+              <textarea id="edit_primaryAddress" rows="4" placeholder="Addresses (compiled)"
+                        class="ta-soft is-clickable" readonly></textarea>
+              <!-- inline editor mount (no dialogs) -->
+              <div id="addressesInlineEditor" class="stack" hidden></div>
+            </div>
+            
+            <div class="full">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label for="edit_notes" style="margin:0;">Notes</label>
+              </div>
+              <textarea id="edit_notes" rows="4" placeholder="Notes (compiled)"
+                        class="ta-soft is-clickable" readonly></textarea>
+              <!-- inline editor mount (no dialogs) -->
+              <div id="notesInlineEditor" class="stack" hidden></div>
+            </div>
+            
+          </div>
+
+          <div class="btnrow" style="margin-top:10px;">
+            <button class="btn btn--primary" id="editSaveBtn">Update Subscriber</button>
+            <button class="btn" id="editCancelBtn">Cancel</button>
+          </div>
+        </section>
+
+
+        <!-- Inline Sheet Panel (replaces all old dialog modals) -->
+        <section id="sheet" class="sheet" hidden aria-live="polite">
+          <div class="sheet__inner" role="dialog" aria-modal="true">
+          <header class="sheet__header">
+              <h2 id="sheetTitle">Title</h2>
+              <button class="btn btn--primary--smm"  id="sheetBackBtn" hidden>Back</button> <!-- class="btn btn--ghost"*/-->
+          </header>
+          <div id="sheetBody" class="sheet__body"></div>
+          <footer id="sheetFooter" class="sheet__footer"></footer>
+          </div>
+        </section>
+
+      </main>
+
+      <dialog id="alertModal" class="modal-overlay" aria-labelledby="alertTitle" aria-describedby="alertMsg">
+        <div class="modal" role="document">
+          <div class="modal__header">
+            <span id="alertTitle">Notice</span>
+            <button class="close-x" type="button" aria-label="Close">✕</button>
+          </div>
+          <div class="modal__body">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <!-- subtle info icon -->
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="#E0F2F1"></circle>
+                <text x="12" y="16" text-anchor="middle" font-size="12" fill="#006D75" font-weight="700">i</text>
+              </svg>
+              <div id="alertMsg" style="white-space:pre-wrap"></div>
+            </div>
+          </div>
+          <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+            <button type="button" class="btn btn--primary" data-role="ok">OK</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Quick Links -->
+      <button id="quickLinksHandle" class="ql-handle" aria-expanded="false" aria-controls="quickLinksCurtain">
+        <span class="ql-ic" aria-hidden="true">≡▾≡</span><span class="sr-only">Partners & Quick Links</span>
+      </button>
+      <section id="quickLinksCurtain" class="ql-curtain" aria-hidden="true">
+        <header class="ql-head"><strong>Partners & Quick Links</strong><button class="ql-close" aria-label="Close">✕</button></header>
+        <div class="ql-grid"><!-- partner items here --></div>
+      </section>
+      <div class="ql-backdrop" aria-hidden="true"></div>
+      
+
+      <button id="backTopHandle" class="bt-handle" aria-label="Back to top" title="Back to top">
+        <span class="bt-ic" aria-hidden="true">▴</span>
+      </button>
+      
+      
+    <footer>
+       <!--<button id="dashback" class="btn btn--primary" onclick="history.back()">Back</button> -->
+    </footer>
+      
+  </div>
+</body>
+</html>

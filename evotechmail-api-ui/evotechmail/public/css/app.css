@@ -1,0 +1,1040 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-bottom: 10px; }
+    .tabs { display: flex; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; cursor: pointer; border: 1px solid #ddd; border-bottom: none; background-color: #f9f9f9; }
+    .tab.active { background-color: #fff; font-weight: bold; }
+    .tab-content { border: 1px solid #ddd; padding: 20px; background-color: #fff; }
+    table.search-form-table { padding: 5px; vertical-align: top; }
+    table.add-form-table td { padding: 5px; vertical-align: top; }
+    input[type="text"], select, textarea { padding: 5px; width: 95%; font-size: 12px; }
+    textarea { resize: vertical; height: 40px; }
+    button { padding: 6px 12px; margin-top: 10px; cursor: pointer; background-color: #0097A7; color: white; border: none; border-radius: 3px; font-size: 12px; }
+    button:hover { background-color: #2980b9; }
+    table.result-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 12px; }
+    th { background-color: #f2f2f2; }
+    #recordCount { margin-top: 10px; font-weight: bold; }
+    #add_bcg { background-color: #f0f0f0; pointer-events: none; }
+
+    /* Modal Loading Spinner */
+    #loadingModal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; }
+    .spinner { display: flex; justify-content: center; align-items: center; }
+    .dot { width: 35px; height: 35px; margin: 10px; background-color: #0097A7; border-radius: 50%; animation: bounce 1.5s infinite ease-in-out; }
+    .dot:nth-child(2) { animation-delay: 0.4s; }
+    .dot:nth-child(3) { animation-delay: 0.6s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+    /* Modal Message */
+    #errorModalWrapper { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; }
+    #errorModal { background-color: white; padding: 20px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); text-align: center; }
+    #errorModal p { margin: 0 0 10px; }
+    #errorModal button { background-color: #0097A7; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+    #errorModal button:hover { background-color: #2980b9; }
+    /* EVO Color = #0097A7 Lighter Evo Color = #66C9D6 */
+    /* Header styles*/
+    #sheetValues { display: flex; justify-content: /*center*/ flex-start; gap: 20px; margin-bottom: 10px; background-color: #f1f1f1; padding: 10px; border: 1px solid #ccc; border-radius: 5px;}
+    #sheetValues span { background-color: #0097A7; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; align-items:center}
+    #sheetValues1 { display: flex; justify-content: left; gap: 20px; margin-bottom: 10px; background-color: #f1f1f1; padding: 10px; border: 1px solid #ccc; border-radius: 5px;}
+    #sheetValues1 span { background-color: #0097A7; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; align-items:center;}
+    /*In Active subscribers*/
+    .inactive-row { background-color: #ffe6e6;  /* Light red background */}
+    .inactive-row td { text-decoration: line-through; }
+    /* Remove strikethrough from buttons inside inactive rows */
+    .inactive-row button {  text-decoration: none; }
+    #openSheetLink { background-color: #0097A7; color: white; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; display: inline-block; text-align: center; } 
+    #openSheetLink:hover { background-color: #007888; }
+
+    /* Image buttons */
+.partner-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.partner-link {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e5e7eb;     /* light gray */
+  border-radius: 10px;
+  background: #fff;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  text-decoration: none;
+}
+
+.partner-link:hover,
+.partner-link:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,.08);
+  border-color: #d1d5db;
+}
+
+.partner-link img {
+  max-width: 200px;   /* controls logo size */
+  max-height: 48px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.partner-text {
+  font: 600 14px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  color: #111827;     /* near-black */
+}
+
+/* =========================
+   Modal (Notes) — Full CSS
+   Works with:
+   <div id="notesModal" class="modal-overlay">
+     <div class="modal">
+       <div class="modal__header"> … <button class="close-x">✕</button></div>
+       <div class="modal__body"><div id="notesList"></div></div>
+       <div class="modal__footer"><button class="btn ...">…</button></div>
+     </div>
+   </div>
+   ========================= */
+
+/* Ensure consistent sizing inside the modal */
+.modal-overlay, .modal-overlay * { box-sizing: border-box; }
+
+/* Overlay covers viewport and centers the modal */
+.modal-overlay{
+  position: fixed;
+  /*width: 100vw;          /* full viewport width */
+  /*height: 100dvh;        /* full viewport height (handles mobile UI) */
+  inset: 0;                          /* top/right/bottom/left: 0 */
+  display: none;                     /* toggle to flex via JS */
+  align-items: center;
+  justify-content: center;
+  background: rgba(17,24,39,.55);    /* translucent charcoal */
+  backdrop-filter: blur(2px);
+  z-index: 99999999999999;                     /* above everything */
+  animation: modal-fade-in .18s ease-out;
+}
+
+/* Optional: allow CSS-only open by toggling a class */
+.modal-overlay.is-open{ display: flex !important;     /* <-- critical */}
+
+/* Modal panel */
+.modal{
+  position: relative;
+  width: min(860px, 96vw);
+  max-height: 84vh;
+  background: #fff;
+  color: #0097A7; /*#111827;*/
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 22px 60px #0097A7; /*rgba(0,0,0,.22);*/
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(0);
+  animation: modal-pop .18s ease-out;
+}
+
+/* Header */
+.modal__header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 14px 16px;
+  font-weight: 700;
+  font-size: 18px;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+/* Close “x” */
+.close-x{
+  background: none;
+  border: 0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;   
+  padding: 6px;
+  border-radius: 8px;
+}
+.close-x:hover{ color:#111827; background:#f3f4f6; }
+
+/* Body: scrolls independently */
+.modal__body{
+  padding: 60px 72px;
+  flex: 1 1 auto;           /* take remaining height */
+  overflow-y: auto;         /* scroll content, keep header/footer fixed */
+  background: #fff;
+}
+
+/* Footer */
+.modal__footer{
+  padding: 12px 16px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  background: #fff;
+}
+
+
+
+dialog.modal-overlay[open] {
+  display: flex !important;     /* critical: render the card */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Shade the page under the modal */
+dialog.modal-overlay::backdrop {
+  background: rgba(17,24,39,.55);
+  backdrop-filter: blur(3px);
+}
+
+/* Note cards */
+.note-card{
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:10px;
+  overflow:hidden;              /* crisp inner corners */
+  background:#fff;
+}
+.note-card__id{ font-weight:600; color:#374151; margin-bottom:6px; }
+.note-card__meta{
+  font-size:12px;
+  color:#6b7280;
+  margin-top:6px;
+  display:flex; gap:6px; flex-wrap:wrap;
+}
+
+/* Textareas inside notes: compact and contained */
+textarea.note-text{
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:100%;
+  margin:4px 0 6px;
+  padding:6px 8px;
+  font-size:12px;
+  line-height:1.3;
+  min-height:48px;      /* compact default */
+  height:56px;          /* visual default; still resizable */
+  resize:vertical;
+  border:1px solid #d1d5db;
+  border-radius:8px;
+  background:#fff;
+  color:#111827;
+}
+textarea.note-text:focus{
+  outline: none;
+  border-color:#0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14,165,233,.15);
+}
+
+/* Subtle animations */
+@keyframes modal-fade-in{
+  from{ opacity:0; } to{ opacity:1; }
+}
+@keyframes modal-pop{
+  from{ transform: translateY(6px); opacity:.98; }
+  to{   transform: translateY(0);   opacity:1;   }
+}
+
+/* Responsive tweaks */
+@media (max-width: 480px){
+  .modal{ border-radius:10px; }
+  .modal__header{ padding:12px 14px; font-size:16px; }
+  .modal__footer{ padding:10px 14px; }
+  .btn{ padding:7px 12px; border-radius:8px; }
+}
+
+/* Optional dark mode (if your page toggles .dark on <body>) */
+.dark .modal{ background:#0b1220; color:#e5e7eb; }
+.dark .modal__header,
+.dark .modal__footer{ background:#0b1220; border-color:#1f2937; }
+.dark .btn--ghost{ background:#111827; color:#e5e7eb; }
+.dark .note-card{ background:#0b1220; border-color:#1f2937; }
+.dark textarea.note-text{
+  background:#0b1220; color:#e5e7eb; border-color:#374151;
+}
+.dark textarea.note-text:focus{
+  box-shadow: 0 0 0 3px rgba(14,165,233,.25);
+}
+
+/* smaller top row with meta + delete */
+.modal .note-card__top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+
+/* delete button */
+.modal .btn--danger{ background:#ef4444; color:#fff; }
+.modal .btn--danger:hover{ filter:brightness(.96); }
+
+/* deleted look */
+.modal .note-card--deleted{ opacity:.6; }
+.modal .note-card--deleted textarea.note-text{
+  text-decoration: line-through;
+  background:#f9fafb;
+}
+
+.view-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;padding:10px 0;}
+#viewModal label{display:block;font-size:12px;color:#6b7280;margin-bottom:4px;}
+#viewModal div>div{font-weight:600}
+
+.icon-btn{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;line-height:0;cursor:pointer;color:#374151}
+.icon-btn:hover{background:#f3f4f6;border-color:#d1d5db}
+
+/* one-line text that truncates with … if too long */
+.one-line{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;      /* needed for text-overflow */
+  max-width: 100%;
+}
+
+/* make base text inside modals black */
+dialog.modal-overlay .modal { color: #111827; }
+
+/* keep headers/labels teal */
+dialog.modal-overlay .modal__header span,
+#viewModal .view-grid label,
+#viewModal .inline-head span { color: #111827; }
+
+/* value cells (right next to labels) => black */
+#viewModal .view-grid > div > div { color: #111827; }
+/* if values contain links (email), make them black too */
+#viewModal .view-grid > div > div a { color: #111827; }
+
+/* read-only cards in the View modal */
+#viewModal .addr-card.ro,
+#viewModal .note-card.ro,
+#viewModal .addr-card.ro .addr-line,
+#viewModal .note-card.ro .note-text { color: #111827; }
+
+/* meta lines stay muted gray (you already set this inline, but here it is in CSS) */
+#viewModal .addr-meta,
+#viewModal .note-meta { color: #6b7280; }
+
+/* View modal typography */
+#viewModal .view-grid label,
+#viewModal .inline-head span {
+  font-weight: 700;
+  font-size: 14px;
+  color: #111827   /* #0ea5e9;               /* teal labels */
+}
+
+/* Values next to labels */
+#viewModal .view-grid > div > div,
+#viewModal .view-grid > div > div a {
+  font-weight: 400;
+  font-size: 13px;
+  color: #111827;               /* black values */
+}
+
+/* Reusable helpers used below */
+#viewModal .meta      { font-size: 11px; color: #6b7280; }
+#viewModal .ro-value  { font-size: 13px; color: #111827; font-weight: 400; }
+
+
+/* Header Block */
+/* ---- Uniform tile grid --------------------------------------------------- */
+:root{
+  --tile-min: 190px;        /* min width for each tile (adjust as you like) */
+  --tile-height: 100px;     /* uniform tile height */
+  --tile-radius: 10px;
+}
+
+#sheetValues.tiles{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-min), 1fr));
+  gap: 6px;
+  align-items: stretch;
+}
+
+/* Every child is a tile of the same size */
+#sheetValues .tile{
+  min-height: var(--tile-height);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--tile-radius);
+  background: #fff;
+  box-shadow: 0 6px 14px rgba(0,0,0,.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-decoration: none; /* for <a> tiles */
+}
+
+/* Hover / focus affordance */
+#sheetValues .tile:hover,
+#sheetValues .tile:focus-visible{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(0,0,0,.12);
+  border-color: #d1d5db;
+}
+
+/* ---- Stat cards (your teal boxes) --------------------------------------- */
+#sheetValues .stat-card{
+  background: #0097A7;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 14px 16px;
+  box-shadow: none;                 /* keep the solid look */
+}
+
+/* Optional: keep headings bold/bigger inside stat cards you render */
+#sheetValues .stat-card b,
+#sheetValues .stat-card strong{ font-size: 18px; }
+
+/* ---- Partner/logo tiles & Mail tile ------------------------------------- */
+#sheetValues .partner{
+  background: #fff;
+  color: inherit;
+}
+
+#sheetValues .partner img{
+  max-width: 180px;
+  max-height: 60px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* If you want the Mail icon a touch smaller */
+#mailButton img{
+  max-width: 56px;
+  max-height: 56px;
+}
+
+/* Tab container */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Individual tab */
+.tab {
+  position: relative;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hover effect */
+.tab:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Active tab */
+.tab.active {
+  background: #fff;
+  color: #0097A7;
+  font-weight: 600;
+  border-color: #d1d5db #d1d5db #fff;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+}
+
+/* Optional: animated underline for active */
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 20%;
+  width: 60%;
+  height: 3px;
+  background: #0097A7;
+  border-radius: 3px;
+}
+
+
+#emailTab .add-form-table {
+    width: 100%;
+  }
+  #emailTab .add-form-table td {
+    width: 100%;
+    display: block;  /* Makes each row stack vertically and take full width */
+  }
+  #emailTab input[type="text"],
+  #emailTab textarea {
+    width: 100% !important;
+    box-sizing: border-box; /* Ensure padding/border don't cause overflow */
+  }
+  #emailTab .add-form-table {
+    width: 60%;
+  }
+
+  #emailTab input[type="text"] {
+    width: 50%;   /* Shorter for To, Subject */
+  }
+
+  #emailTab #email_cc,
+  #emailTab #email_bcc,
+  #emailTab #email_body {
+    width: 100% !important;    /* Wide */
+    box-sizing: border-box;
+  }
+
+  #emailTab #email_cc {
+    height: 50px;    /* Taller for CC, BCC */
+  }
+
+  #emailTab #email_bcc {
+    height: 150px;    /* Taller for CC, BCC */
+  }
+
+  #emailTab #email_body {
+    height: 250px;   /* Taller for Body */
+  }
+  /* Email tab card look */
+  #emailTab .add-form-table {
+  width: min(1100px, 100%);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  }
+
+  /* Labels bold, spacing */
+  #emailTab label { font-weight: 700; color: #111827; display:block; margin-bottom: 4px; }
+  #emailTab td { padding: 8px 6px; }
+
+  /* Arrange “To / Subject” in 2 columns on wide screens */
+  @media (min-width: 720px){
+  #emailTab .add-form-table tr:nth-child(1) td,
+  #emailTab .add-form-table tr:nth-child(6) td { /* To / Subject rows in your markup */
+      width: 50%;
+      display: inline-block;
+      vertical-align: top;
+  }
+  }
+
+  /* Group checkboxes as chips */
+  #emailTab td label input[type="checkbox"]{ margin-right: 6px; }
+  #emailTab td label{
+  display: inline-flex; align-items: center;
+  border: 1px solid #e5e7eb; border-radius: 9999px;
+  padding: 6px 10px; margin: 4px 6px 0 0; background: #f9fafb;
+  font-weight: 600; color: #374151; cursor: pointer;
+  }
+  #emailTab td label:hover{ background:#f3f4f6; }
+
+  /* Preview panel */
+  #email_preview{
+  border: 1px solid #e5e7eb !important;
+  background: #f9fafb !important;
+  border-radius: 10px;
+  min-height: 140px !important;
+  }
+
+  /* === BCC partner checkboxes (rectangular, not pills) === */
+  #emailTab .bcc-groups{
+  display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;
+  }
+  #emailTab .bcc-groups label{
+  display:inline-flex; align-items:center;
+  border:1px solid #e5e7eb; border-radius:8px;
+  padding:6px 10px; background:#fff;
+  font-weight:600; color:#374151; cursor:pointer;
+  }
+  #emailTab .bcc-groups label:hover{ background:#f8fafc; }
+  #emailTab .bcc-groups input[type="checkbox"]{ margin-right:6px; }
+
+  /* Ensure normal field labels are not styled as chips */
+  #emailTab .add-form-table > tbody label{
+  background:transparent; border:0; border-radius:0; padding:0;
+  }
+
+
+  #emailTab input[type="date"]{
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  }
+
+
+  /* header row for Email tab */
+  /* Row: title on the left, tiles on the right, same line */
+  #emailTab .email-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  }
+
+  /* Keep the two tiles on one row */
+  #emailTab .email-actions{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  }
+
+  /* Optional: make sure tiles don’t shrink oddly */
+  #emailTab .email-actions .tile{
+  flex: 0 0 auto;
+  }
+
+
+  /* Center the two tiles and keep them together */
+  #emailTab .email-header{
+      display:flex;
+      align-items:left;
+      justify-content:left !important; /* override any space-between */
+      gap:16px;                           /* space between icons */
+      margin: 6px 0 10px;
+  }
+  
+  /* Don’t let a tile grow and push the other away */
+  #emailTab .email-header .tile.partner{
+      flex: 0 0 auto;                     /* fixed-size tile */
+      width: 120px; height: 60px; padding: 8px;
+      display:flex; align-items:center; justify-content:center;
+      border:1px solid #e5e7eb; border-radius:10px; background:#fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,.05);
+  }
+  #emailTab .email-header .tile.partner img{
+      max-width:96px; max-height:36px; object-fit:contain;
+  }
+  
+  /* Small screens: tighten the gap a bit */
+  @media (max-width: 720px){
+      #emailTab .email-header{ gap:10px; }
+  }
+  
+
+
+  /* Email Logs */
+  #emailLogsModal .email-logs__filters{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  #emailLogsModal .table-wrap{ max-height:50vh; overflow:auto; }
+
+  .nowrap{ white-space:nowrap; }
+  .tc{ text-align:center; }
+  .tr{ text-align:right; }
+
+  .btn.btn--icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:6px 8px; border:1px solid #e1e4e8; border-radius:8px; background:#fff;
+  }
+  .btn.btn--icon svg{ display:block; }
+
+  .badge{ display:inline-block; padding:2px 8px; font-size:12px; line-height:18px; border-radius:999px; }
+  .badge--success{ background:#e6f7ee; color:#127c46; }
+  .badge--danger{  background:#fdecea; color:#a12622; }
+
+  #emailLogsPager{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+  #logsPageLabel{ min-width:120px; text-align:center; align-self:center; }
+
+  .modal.modal--wide{ max-width:900px; }
+
+  .email-log-detail__grid{
+  display:grid; grid-template-columns:120px 1fr; gap:6px 12px; margin-bottom:10px;
+  }
+  .email-log-preview{ border:1px solid #ddd; border-radius:6px; overflow:hidden; height:360px; margin-top:8px; }
+  .email-log-preview iframe{ width:100%; height:100%; border:0; }
+
+  #emailLogsModal .email-logs__dates{
+  display:flex;
+  gap:12px;
+  align-items:center;      /* inline with inputs */
+  margin:6px 0 8px;
+  flex-wrap:wrap;          /* wrap nicely on narrow widths */
+  }
+  #emailLogsModal .email-logs__dates label{
+  display:inline-flex;     /* label + input on one line */
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  margin:0;
+  }
+
+  .back-icon { width: 20px; height: 20px; color: #333; vertical-align: middle; }
+  .back-link { display:inline-flex; gap:6px; align-items:center; }
+   #emailTab .add-form-table {
+      width: 100%;
+    }
+    #emailTab .add-form-table td {
+      width: 100%;
+      display: block;  /* Makes each row stack vertically and take full width */
+    }
+    #emailTab input[type="text"],
+    #emailTab textarea {
+      width: 100% !important;
+      box-sizing: border-box; /* Ensure padding/border don't cause overflow */
+    }
+    #emailTab .add-form-table {
+      width: 60%;
+    }
+
+    #emailTab input[type="text"] {
+      width: 50%;   /* Shorter for To, Subject */
+    }
+
+    #emailTab #email_cc,
+    #emailTab #email_bcc,
+    #emailTab #email_body {
+      width: 100% !important;    /* Wide */
+      box-sizing: border-box;
+    }
+
+    #emailTab #email_cc {
+      height: 50px;    /* Taller for CC, BCC */
+    }
+
+    #emailTab #email_bcc {
+      height: 150px;    /* Taller for CC, BCC */
+    }
+
+    #emailTab #email_body {
+      height: 250px;   /* Taller for Body */
+    }
+    /* Email tab card look */
+    #emailTab .add-form-table {
+    width: min(1100px, 100%);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    }
+
+    /* Labels bold, spacing */
+    #emailTab label { font-weight: 700; color: #111827; display:block; margin-bottom: 4px; }
+    #emailTab td { padding: 8px 6px; }
+
+    /* Arrange “To / Subject” in 2 columns on wide screens */
+    @media (min-width: 720px){
+    #emailTab .add-form-table tr:nth-child(1) td,
+    #emailTab .add-form-table tr:nth-child(6) td { /* To / Subject rows in your markup */
+        width: 50%;
+        display: inline-block;
+        vertical-align: top;
+    }
+    }
+
+    /* Group checkboxes as chips */
+    #emailTab td label input[type="checkbox"]{ margin-right: 6px; }
+    #emailTab td label{
+    display: inline-flex; align-items: center;
+    border: 1px solid #e5e7eb; border-radius: 9999px;
+    padding: 6px 10px; margin: 4px 6px 0 0; background: #f9fafb;
+    font-weight: 600; color: #374151; cursor: pointer;
+    }
+    #emailTab td label:hover{ background:#f3f4f6; }
+
+    /* Preview panel */
+    #email_preview{
+    border: 1px solid #e5e7eb !important;
+    background: #f9fafb !important;
+    border-radius: 10px;
+    min-height: 140px !important;
+    }
+
+    /* === BCC partner checkboxes (rectangular, not pills) === */
+    #emailTab .bcc-groups{
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;
+    }
+    #emailTab .bcc-groups label{
+    display:inline-flex; align-items:center;
+    border:1px solid #e5e7eb; border-radius:8px;
+    padding:6px 10px; background:#fff;
+    font-weight:600; color:#374151; cursor:pointer;
+    }
+    #emailTab .bcc-groups label:hover{ background:#f8fafc; }
+    #emailTab .bcc-groups input[type="checkbox"]{ margin-right:6px; }
+
+    /* Ensure normal field labels are not styled as chips */
+    #emailTab .add-form-table > tbody label{
+    background:transparent; border:0; border-radius:0; padding:0;
+    }
+
+
+    #emailTab input[type="date"]{
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    }
+
+
+    /* header row for Email tab */
+    /* Row: title on the left, tiles on the right, same line */
+    #emailTab .email-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    }
+
+    /* Keep the two tiles on one row */
+    #emailTab .email-actions{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+    }
+
+    /* Optional: make sure tiles don’t shrink oddly */
+    #emailTab .email-actions .tile{
+    flex: 0 0 auto;
+    }
+
+
+    /* Center the two tiles and keep them together */
+    #emailTab .email-header{
+        display:flex;
+        align-items:left;
+        justify-content:left !important; /* override any space-between */
+        gap:16px;                           /* space between icons */
+        margin: 6px 0 10px;
+    }
+    
+    /* Don’t let a tile grow and push the other away */
+    #emailTab .email-header .tile.partner{
+        flex: 0 0 auto;                     /* fixed-size tile */
+        width: 120px; height: 60px; padding: 8px;
+        display:flex; align-items:center; justify-content:center;
+        border:1px solid #e5e7eb; border-radius:10px; background:#fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,.05);
+    }
+    #emailTab .email-header .tile.partner img{
+        max-width:96px; max-height:36px; object-fit:contain;
+    }
+    
+    /* Small screens: tighten the gap a bit */
+    @media (max-width: 720px){
+        #emailTab .email-header{ gap:10px; }
+    }
+    
+
+
+    /* Email Logs */
+    #emailLogsModal .email-logs__filters{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    #emailLogsModal .table-wrap{ max-height:50vh; overflow:auto; }
+
+    .nowrap{ white-space:nowrap; }
+    .tc{ text-align:center; }
+    .tr{ text-align:right; }
+
+    .btn.btn--icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:6px 8px; border:1px solid #e1e4e8; border-radius:8px; background:#fff;
+    }
+    .btn.btn--icon svg{ display:block; }
+
+    .badge{ display:inline-block; padding:2px 8px; font-size:12px; line-height:18px; border-radius:999px; }
+    .badge--success{ background:#e6f7ee; color:#127c46; }
+    .badge--danger{  background:#fdecea; color:#a12622; }
+
+    #emailLogsPager{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+    #logsPageLabel{ min-width:120px; text-align:center; align-self:center; }
+
+    .modal.modal--wide{ max-width:900px; }
+
+    .email-log-detail__grid{
+    display:grid; grid-template-columns:120px 1fr; gap:6px 12px; margin-bottom:10px;
+    }
+    .email-log-preview{ border:1px solid #ddd; border-radius:6px; overflow:hidden; height:360px; margin-top:8px; }
+    .email-log-preview iframe{ width:100%; height:100%; border:0; }
+
+    #emailLogsModal .email-logs__dates{
+    display:flex;
+    gap:12px;
+    align-items:center;      /* inline with inputs */
+    margin:6px 0 8px;
+    flex-wrap:wrap;          /* wrap nicely on narrow widths */
+    }
+    #emailLogsModal .email-logs__dates label{
+    display:inline-flex;     /* label + input on one line */
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    margin:0;
+    }
+
+    .back-icon { width: 20px; height: 20px; color: #333; vertical-align: middle; }
+    .back-link { display:inline-flex; gap:6px; align-items:center; }
+
+
+    /* Actions cell keeps icons side-by-side */
+    #emailLogsTable td.actions-cell{
+        display:flex; justify-content:flex-end; align-items:center; gap:8px; white-space:nowrap;
+    }
+    
+    /* Icon buttons */
+    .btn.btn--icon{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; background:transparent; border:none; line-height:1; }
+    .btn.btn--icon svg{ pointer-events:none; }
+    
+    /* Busy spinner on the icon */
+    .btn.btn--icon.is-busy svg{ animation:spin .9s linear infinite; opacity:.7; }
+    @keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+    
+    /* Status badge flash */
+    .badge.pulse{ animation:pulse .7s ease; }
+    @keyframes pulse{ 0%{transform:scale(.95)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+  /* Actions cell keeps icons side-by-side */
+  #emailLogsTable td.actions-cell{
+      display:flex; justify-content:flex-end; align-items:center; gap:8px; white-space:nowrap;
+  }
+  
+  /* Icon buttons */
+  .btn.btn--icon{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; background:transparent; border:none; line-height:1; }
+  .btn.btn--icon svg{ pointer-events:none; }
+  
+  /* Busy spinner on the icon */
+  .btn.btn--icon.is-busy svg{ animation:spin .9s linear infinite; opacity:.7; }
+  @keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  
+  /* Status badge flash */
+  .badge.pulse{ animation:pulse .7s ease; }
+  @keyframes pulse{ 0%{transform:scale(.95)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+
+
+/* ===== Mobile & Tablet Modal Enhancements ===== */
+/* ===== Mobile & Tablet Modal Enhancements ===== */
+/* ===== Mobile & Tablet Modal Enhancements ===== */
+
+/* Respect iOS safe areas + prevent edge collisions */
+dialog.modal-overlay[open] {
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 8px)
+      calc(env(safe-area-inset-right, 0px) + 8px)
+      calc(env(safe-area-inset-bottom, 0px) + 8px)
+      calc(env(safe-area-inset-left, 0px) + 8px);
+  }
+  
+  /* Phones (≤ 600px) */
+  @media (max-width: 600px){
+    .modal {
+      width: 96vw;
+      max-width: 96vw;
+      max-height: 90svh;           /* better on iOS than vh */
+      border-radius: 12px;
+    }
+    .modal.modal--wide {           /* the logs modal */
+      width: 96vw;
+      max-width: 96vw;
+    }
+  
+    .modal__header,
+    .modal__footer { padding: 10px 12px; }
+    .modal__header span { font-size: 16px; }
+    .close-x { font-size: 18px; padding: 6px; }
+  
+    .modal__body {
+      padding: 12px;               /* tighter body padding */
+      overflow: auto;
+    }
+  
+    /* Make button rows stack, full-width */
+    .modal__body .btn,
+    .modal__footer .btn { width: 100%; }
+  
+    /* --- Email Lists Modal --- */
+    #emailListsModal .modal__body > div[style*="display:flex"]{
+      flex-wrap: wrap !important;
+    }
+    #emailListsModal label { display: inline-flex; align-items: center; margin-right: 10px; margin-top: 6px; }
+    #emailListsModal #partnersGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    #emailsOutput {
+      min-height: 120px;
+      font-size: 13px;
+    }
+  
+    /* --- Email Logs Modal (list view) --- */
+    #emailLogsModal .email-logs__filters {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+    #emailLogsModal .email-logs__filters select,
+    #emailLogsModal .email-logs__filters input,
+    #emailLogsModal .email-logs__filters .btn { width: 100%; }
+  
+    #emailLogsModal .email-logs__dates {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+    #emailLogsModal .email-logs__dates label {
+      display: flex;
+      justify-content: space-between;
+    }
+    #emailLogsModal .email-logs__dates input[type="date"]{
+      flex: 1 1 auto;
+    }
+  
+    /* Table: enable horizontal scroll on small screens */
+    #emailLogsModal .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+    }
+    #emailLogsModal table.table {
+      min-width: 600px;           /* keep columns readable; scrolls if narrower viewport */
+      font-size: 12px;
+    }
+    #emailLogsModal th, #emailLogsModal td { padding: 6px; }
+    #emailLogsPager {
+      justify-content: center;
+      gap: 6px;
+    }
+    #logsPageLabel { min-width: 0; }
+  
+    /* Detail view: ensure comfortable reading */
+    #emailLogDetailView, #emailLogDetailModal .modal__body {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+  
+    /* Tighten compact tables globally inside modals on phones */
+    .table--compact th, .table--compact td { padding: 6px 8px; }
+  }
+  
+  /* Small tablets (601–900px): two-column feel but still comfy */
+  @media (min-width: 601px) and (max-width: 900px){
+    .modal { width: min(720px, 94vw); max-height: 88svh; }
+    .modal.modal--wide { max-width: 94vw; }
+    .modal__body { padding: 16px; }
+  
+    #emailLogsModal .email-logs__filters {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    #emailLogsModal .email-logs__filters select,
+    #emailLogsModal .email-logs__filters input { min-width: 220px; }
+    #emailLogsModal .table-wrap { max-height: 58vh; }
+  }
+  
+  /* Accessibility & tap affordances */
+  @media (hover: none){
+    .btn, .close-x, select, input, label { min-height: 44px; }
+  }
+  
+  /* Subtle: prevent inputs from hitting screen edges inside dialogs */
+  dialog.modal-overlay .modal__body > *:first-child { margin-top: 0; }
+  dialog.modal-overlay .modal__body > *:last-child  { margin-bottom: 0; }
+  
