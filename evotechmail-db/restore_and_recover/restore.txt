@@ -1,0 +1,9 @@
+export PGPASSWORD="postgres"
+set PGPASSWORD=postgres
+
+
+-- Custom Format (-F c)
+
+pg_restore -h localhost -p 5444 -U postgres -d evotech --schema=evomail evotechs_utility_evomail_backup_20250903_223008.dmp > restoreevomail.log 2>&1
+
+pg_restore -h localhost -p 5444 -U postgres -d evotech --schema=evosignin evotechs_utility_evosignin_backup_20250903_223008.dmp > restoreevosignin.log 2>&1
