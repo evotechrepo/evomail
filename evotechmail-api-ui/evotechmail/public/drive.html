@@ -1,0 +1,74 @@
+<!-- index.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Drive Uploader</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
+      .card { max-width: 720px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
+      label { display:block; font-weight:600; margin: 8px 0 4px; }
+      input, button { font-size: 16px; }
+      .row { margin-top: 12px; }
+      .muted { color: #6b7280; font-size: 13px; }
+      .full { width: 100%; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Upload files to Google Drive</h2>
+
+    <form id="uform" enctype="multipart/form-data">
+    <label>Folder name <input name="folder_name" required /></label><br/>
+    <small>Optional parent folder ID: </small><input name="parent_id" style="width:380px" /><br/><br/>
+    <input type="file" name="files" multiple required />
+    <button id="uploadBtn" type="button">Upload</button>
+    </form>
+    <pre id="out"></pre>
+
+      <pre id="out" class="row muted"></pre>
+    </div>
+    <script>
+    (function(){
+    const form = document.getElementById('uform');
+    const btn  = document.getElementById('uploadBtn');
+    const out  = document.getElementById('out');
+
+    // prevent any native submit just in case
+    form.addEventListener('submit', e => e.preventDefault());
+
+    // avoid double wiring
+    if (btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+
+    let busy = false; // simple reentrancy guard
+    btn.addEventListener('click', async () => {
+        if (busy) return;
+        busy = true;
+        try {
+        out.textContent = 'Uploading...';
+        const fd = new FormData(form);
+        // optional: client idempotency key (server can use it)
+        fd.append('_nonce', crypto.randomUUID());
+
+        const r = await fetch('/evotechmail/api/drive/upload', {
+            method: 'POST',
+            body: fd,
+            credentials: 'include'
+        });
+
+        const ct = r.headers.get('content-type') || '';
+        const data = ct.includes('application/json') ? await r.json()
+            : { error: 'HTTP '+r.status, detail: (await r.text()).slice(0,200) };
+        out.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+        out.textContent = JSON.stringify({ error: String(err) }, null, 2);
+        } finally {
+        busy = false;
+        }
+    });
+    })();
+    </script>
+  </body>
+</html>

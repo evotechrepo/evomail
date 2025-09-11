@@ -21,10 +21,17 @@
       <header>
         <img src="/evotechmail/assets/evo.png" alt="">
         <h1>USPS BCG Compliance</h1>
-        <span class="muted" id="loadedCount" style="margin-left:auto"></span>
+          <span class="muted" id="loadedCount" style="margin-left:auto"></span>
       </header>
-      
+
       <main>
+        <!-- Compliance totals row -->
+        <div class="comp-totals">
+          <div id="compOpen" class="comp-total-line"></div>
+          <div id="compClosed" class="comp-total-line"></div>
+        </div>
+
+
         <div class="search">
           <button id="complianceback" class="btn btn--primary--sm" onclick="history.back()">Back</button>
           <input id="q" type="text" placeholder="Search PMB #"/>

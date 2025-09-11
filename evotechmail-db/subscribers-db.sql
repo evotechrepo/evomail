@@ -498,6 +498,19 @@ CREATE TABLE IF NOT EXISTS reports_execution_log (
 
 CREATE INDEX IF NOT EXISTS idx_reports_log_report ON reports_execution_log(fk_report_id, started_ts DESC);
 
+-- =========================================
+-- Used now for google drive secret token
+-- =========================================
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+  id            TEXT PRIMARY KEY,
+  access_token  TEXT,           -- optional/unused
+  refresh_token TEXT NOT NULL,  -- we put the encrypted blob here
+  scope         TEXT,           -- optional/unused
+  token_type    TEXT,           -- optional/unused
+  expiry_date   BIGINT,         -- optional/unused
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+
 
 -- =========================================
 -- (Optional) Triggers to auto-update last_mod_ts

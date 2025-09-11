@@ -65,6 +65,271 @@
 })();
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Google Drive Upload
+//(function(){
+// Google Drive Upload
+const out   = document.getElementById('driveOut');
+const btn   = document.getElementById('btnUploadDocs');      // legacy button (may not exist)
+const f1583 = document.getElementById('f_1583');
+const fpid  = document.getElementById('f_photo_id');
+const faddr = document.getElementById('f_addr_id');
+
+// Only wire the legacy button if it exists; DO NOT return early so helpers below are defined.
+if (btn && btn.dataset.wired !== '1') {
+  btn.dataset.wired = '1';
+  btn.addEventListener('click', async () => {
+    if (!(await ensureGoogleConnectedWithPopup())) return;
+    await smartUpload();
+  });
+}
+
+// If you already have global $/val helpers elsewhere, delete the two lines below to avoid duplicates.
+const el  = id => document.getElementById(id);
+const val = id => (el(id)?.value ?? '').trim();
+
+// Map Source -> partner code
+function mapPartnerFromSource() {
+  const srcSel = el('add_source');
+  const raw = (srcSel?.value || srcSel?.selectedOptions?.[0]?.textContent || '').toLowerCase();
+  if (raw.includes('post scan') || raw.includes('postscan')) return 'PSM';
+  if (raw.includes('anytime')) return 'ATM';
+  if (raw.includes('ipostal')) return 'IPOSTAL';
+  if (raw.includes('davinci')) return 'DAVINCI';
+  if (raw.includes('owner')) return 'OWNER';
+  return 'OWNER';
+}
+
+function buildSubscriberName(first, last, company) {
+  const base = `${(first || '').trim()} ${(last || '').trim()}`.trim();
+  const co = (company || '').trim();
+  return (!co || co.toLowerCase() === 'individual') ? base : `${base} (${co})`;
+}
+
+function getCtx(){
+  const partner = mapPartnerFromSource();
+  const pmb     = val('add_pmb');
+  const first   = val('add_firstName');
+  const last    = val('add_lastName');
+  const company = val('add_company') || 'Individual';
+  const subscriber_name = buildSubscriberName(first, last, company).replace(/\s+/g,' ');
+  return { partner, pmb, subscriber_name };
+}
+
+// Popup OAuth (first-time only)
+async function ensureGoogleConnectedWithPopup(){
+  const st = await fetch('/evotechmail/api/drive/status', { credentials:'include' }).then(r=>r.json());
+  if (st.connected) return true;
+
+  const w = window.open(st.authUrl, 'gdrive_auth',
+    'height=700,width=600,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes');
+  if (!w) { alert('Please allow popups for this site to connect Google Drive.'); return false; }
+
+  return new Promise(resolve => {
+    const onMsg = (ev) => {
+      if (ev?.data?.type === 'gdrive-connected') {
+        window.removeEventListener('message', onMsg);
+        try { w.close(); } catch {}
+        resolve(true);
+      }
+    };
+    window.addEventListener('message', onMsg);
+
+    // Fallback poll
+    const t = setInterval(async () => {
+      try {
+        const s = await fetch('/evotechmail/api/drive/status',{credentials:'include'}).then(r=>r.json());
+        if (s.connected){ clearInterval(t); window.removeEventListener('message', onMsg); try{w.close();}catch{} resolve(true); }
+      } catch {}
+    }, 1000);
+  });
+}
+
+async function smartUpload(){
+  try{
+    const { partner, pmb, subscriber_name } = getCtx();
+    if (!partner || !pmb || !subscriber_name){
+      if (out) out.textContent = JSON.stringify({ error: 'partner, pmb, subscriber_name are required' }, null, 2);
+      return;
+    }
+
+    const files = [
+      { field:'form_1583',  f: f1583?.files?.[0] },
+      { field:'photo_id',   f: fpid?.files?.[0]  },
+      { field:'address_id', f: faddr?.files?.[0] }
+    ].filter(x => !!x.f);
+
+    const total = files.reduce((n,x)=> n + (x.f.size||0), 0);
+    if (total > 10 * 1024 * 1024) {
+      if (out) out.textContent = JSON.stringify({ error:'Total upload size exceeds 10MB' }, null, 2);
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('partner', partner);
+    fd.append('pmb', pmb);
+    fd.append('subscriber_name', subscriber_name);
+    for (const x of files) fd.append(x.field, x.f);
+
+    if (out) out.textContent = 'Uploading to Drive…';
+
+    // First-time OAuth popup if needed
+    if (!(await ensureGoogleConnectedWithPopup())) return;
+
+    const r = await fetch('/evotechmail/api/drive/smart-upload', {
+      method: 'POST',
+      body: fd,
+      credentials: 'include'
+    });
+
+    if (r.status === 428) { // server says: not connected; provides authUrl
+      const j = await r.json();
+      location.href = j.authUrl;
+      return;
+    }
+
+    const ct = r.headers.get('content-type') || '';
+    const data = ct.includes('application/json') ? await r.json()
+             : { error: 'HTTP '+r.status, detail: (await r.text()).slice(0,200) };
+    if (out) out.textContent = JSON.stringify(data, null, 2);
+    return data;
+  } catch(err){
+    if (out) out.textContent = JSON.stringify({ error: String(err) }, null, 2);
+  }
+}
+
+
+function getDriveCtx(){ return getCtx(); }
+
+
+//// VIEW DRIVE DOCUMENTS:
+
+function buildSubscriberName(first, last, company) {
+  const base = `${(first||'').trim()} ${(last||'').trim()}`.trim();
+  const co = (company||'').trim();
+  if (!co || co.toLowerCase() === 'individual') return base;
+  return `${base} (${co})`;
+}
+
+// replace existing getPartnerFromPayload in dashboard.js
+function getPartnerFromPayload(source){
+  const s = String(source || '').trim().toLowerCase();
+  // accept already-normalized short codes
+  if (['psm','atm','ipostal','davinci','owner'].includes(s)) return s.toUpperCase();
+  // map common labels
+  if (s.includes('post'))    return 'PSM';
+  if (s.includes('anytime')) return 'ATM';
+  if (s.includes('ipostal')) return 'IPOSTAL';
+  if (s.includes('davinci')) return 'DAVINCI';
+  if (s.includes('owner'))   return 'OWNER';
+  return 'OWNER';
+}
+
+async function loadDriveDocsForPayload(p){
+  const box   = document.getElementById('view_driveDocs');
+  const openBtn = document.getElementById('openDriveFolderBtn');
+  if (box) box.textContent = 'Checking Drive…';
+  if (openBtn) openBtn.hidden = true;
+
+  try {
+
+       const row = Array.isArray(p?.row) ? p.row : [];
+       const [pmb, first, last, company, phone, email, primaryAddr, status, source, bcg] = row;
+       // build context
+       const partner = getPartnerFromPayload(source);
+       const name = buildSubscriberName(first , last , company || '');
+
+      if (!partner || !pmb) {
+        if (box) box.textContent = 'No partner/PMB.';
+        return;
+      }
+
+      // ensure connected (optional: if you want silent status only, skip popup here)
+      const st = await fetch('/evotechmail/api/drive/status', { credentials:'include' }).then(r=>r.json());
+      if (!st.connected) {
+        if (box) box.innerHTML = `Not connected to Drive. <button class="btn btn--small" id="connectDriveNow">Connect</button>`;
+        document.getElementById('connectDriveNow')?.addEventListener('click', async () => {
+          if (await ensureGoogleConnectedWithPopup()) loadDriveDocsForPayload(p);
+        });
+        return;
+      }
+
+    // query server
+    //const qs = new URLSearchParams({ partner, pmb, subscriber_name: name });
+      const qs = new URLSearchParams({
+        partner,
+        pmb,
+        subscriber_name: name,
+        first: first || '',
+        last: last || ''
+      });
+
+    const resp = await fetch(`/evotechmail/api/drive/smart-list?${qs}`, { credentials:'include' });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`smart-list ${resp.status}: ${text.slice(0,200)}`);
+    }
+    const data = await resp.json();
+
+
+    if (!data?.folder) {
+      if (box) box.textContent = 'No folder found for this subscriber.';
+      return;
+    }
+
+    // render
+    const files = Array.isArray(data.files) ? data.files : [];
+    if (openBtn) {
+      openBtn.hidden = false;
+      openBtn.onclick = () => window.open(data.folder.webViewLink || `https://drive.google.com/drive/folders/${data.folder.id}`, '_blank');
+    }
+
+    if (!files.length) {
+      if (box) box.textContent = 'Folder found but empty.';
+      return;
+    }
+
+    // simple list (name → opens in Drive)
+    if (box) {
+      box.innerHTML = files.map(f => {
+        const icon = f.iconLink ? `<img src="${f.iconLink}" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px;">` : '';
+        const href = f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`;
+        return `<div class="one-line" style="margin:4px 0">
+                  ${icon}<a href="${href}" target="_blank" rel="noopener">${escapeHTML(f.name)}</a>
+                </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    console.error('loadDriveDocsForPayload error', e);
+    if (box) box.textContent = 'Error reading Drive.';
+  }
+}
+
+// NOTE: Do NOT add another unguarded `btn.addEventListener(...)` below.
+// The guarded wiring above is enough and avoids `btn` null errors.
+
+//})();
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Toggle ID-docs block
+(() => {
+  const chk = document.getElementById('add_attachDocs');
+  const blk = document.getElementById('add_docsBlock');
+  if (!chk || !blk) return;
+  chk.addEventListener('change', () => {
+    if (chk.checked) { blk.removeAttribute('hidden'); }
+    else { blk.setAttribute('hidden',''); blk.querySelectorAll('input[type="file"]').forEach(i=> i.value=''); }
+  });
+})();
+
+
+
 // Back to page top arrow
 (() => {
   const handle = document.getElementById('backTopHandle');
@@ -249,8 +514,301 @@
       qEl?.dispatchEvent(new Event('input'));
     }
     
+///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 
-    
+  // Scoped drive list loader (copy of loadDriveDocsForPayload but scoped to a root)
+    async function loadDriveDocsForPayloadScoped(p, root){
+    const box     = root.querySelector('#upload_driveDocs');
+    const openBtn = root.querySelector('#openDriveFolderBtn_upl');
+    if (box) box.textContent = 'Checking Drive…';
+    if (openBtn) openBtn.hidden = true;
+
+    try {
+      const row = Array.isArray(p?.row) ? p.row : [];
+      const [pmb, first, last, company, _phone, _email, _addr, _status, source] = row;
+      const partner = getPartnerFromPayload(source);
+      const name = buildSubscriberName(first, last, company || '');
+      if (!partner || !pmb){ if (box) box.textContent = 'No partner/PMB.'; return; }
+
+      const st = await fetch('/evotechmail/api/drive/status', { credentials:'include' }).then(r=>r.json());
+      if (!st.connected){
+        if (box) box.innerHTML = `Not connected to Drive. <button class="btn btn--small" id="connectDriveNow_upl">Connect</button>`;
+        root.querySelector('#connectDriveNow_upl')?.addEventListener('click', async () => {
+          if (await ensureGoogleConnectedWithPopup()) loadDriveDocsForPayloadScoped(p, root);
+        });
+        return;
+      }
+
+      const qs = new URLSearchParams({ partner, pmb, subscriber_name: name, first: first||'', last: last||'' });
+      const resp = await fetch(`/evotechmail/api/drive/smart-list?${qs}`, { credentials:'include' });
+      if (!resp.ok) throw new Error((await resp.text()).slice(0,200));
+      const data = await resp.json();
+
+      // store folderId (if any) for the upload call
+      root.dataset.folderId = data?.folder?.id || '';
+
+      if (!data?.folder){ if (box) box.textContent = 'No folder found for this subscriber.'; return; }
+
+      if (openBtn){
+        openBtn.hidden = false;
+        openBtn.onclick = () => window.open(data.folder.webViewLink || `https://drive.google.com/drive/folders/${data.folder.id}`, '_blank');
+      }
+
+      const files = Array.isArray(data.files) ? data.files : [];
+      if (!files.length){ if (box) box.textContent = 'Folder found but empty.'; return; }
+
+      if (box){
+        box.innerHTML = files.map(f => {
+          const icon = f.iconLink ? `<img src="${f.iconLink}" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px;">` : '';
+          const href = f.webViewLink || `https://drive.google.com/file/d/${f.id}/view`;
+          return `<div class="one-line" style="margin:4px 0">${icon}<a href="${href}" target="_blank" rel="noopener">${escapeHTML(f.name)}</a></div>`;
+        }).join('');
+      }
+    } catch(e){
+      if (box) box.textContent = 'Error reading Drive.';
+      console.error('loadDriveDocsForPayloadScoped error', e);
+    }
+  }
+
+
+  // Add this helper near openUploadDrawerFromBtn (top-level)
+function resetUploadPane(pane){
+  if (!pane) return;
+  // Clear text inputs
+  const prefixEl = pane.querySelector('#upload_prefix');
+  if (prefixEl) prefixEl.value = '';
+
+  // Clear file inputs
+  ['#u_f_1583','#u_f_addr','#u_f_pid'].forEach(sel => {
+    const el = pane.querySelector(sel);
+    if (el) el.value = '';
+  });
+
+  // Clear outputs / messages
+  const mini = pane.querySelector('#upload_mini');
+  const out  = pane.querySelector('#upload_out');
+  const docs = pane.querySelector('#upload_driveDocs');
+  if (mini) mini.textContent = '';
+  if (out)  out.textContent  = '';
+  if (docs) docs.textContent = 'Checking Drive…';
+
+  // Hide “Open in Drive” until we re-load
+  const openBtn = pane.querySelector('#openDriveFolderBtn_upl');
+  if (openBtn) openBtn.hidden = true;
+
+  // Clear any folderId we cached
+  pane.dataset.folderId = '';
+}
+
+// Put this near your other helpers (top-level)
+window.closeUpload = function(){
+  const pane   = document.getElementById('uploadPane');
+  const details= document.getElementById('detailsPane');
+  const list   = document.getElementById('list');
+  const tiles  = document.querySelector('.tiles-grid');
+  const search = document.querySelector('.search');
+
+  if (pane){
+    pane.hidden = true;
+    pane.style.display = 'none';
+  }
+  if (details){ details.hidden = true; details.style.display = 'none'; }
+
+  // Restore tiles/search/list
+  const show = el => {
+    if (!el) return;
+    if (typeof showEl === 'function') return showEl(el);
+    el.hidden = false; el.style.removeProperty('display');
+  };
+  show(tiles);
+  show(search);
+  if (list) list.hidden = false;
+
+  // Unhide all pills in list
+  if (list) Array.from(list.children).forEach(el => el.classList.remove('is-hidden'));
+  document.getElementById("dashback").style.display = "block";
+}
+
+// Replace your existing openUploadDrawerFromBtn with this version
+window.openUploadDrawerFromBtn = async function(btnEl){
+  const details = document.getElementById('detailsPane');
+  const list    = document.getElementById('list');
+  const tiles   = document.querySelector('.tiles-grid');
+  const search  = document.querySelector('.search');
+  const addPane = document.getElementById('addPane');
+
+  // hide surfaces (same as Inbox)
+  if (addPane) addPane.hidden = true;
+  if (details){ details.hidden = true; details.style.display = 'none'; }
+  if (tiles)   tiles.hidden   = true;
+  if (search)  search.hidden  = true;
+  if (list)    list.hidden    = true;
+
+  // anchor
+  const anchor = document.querySelector('.tiles-grid')
+              || document.getElementById('list')
+              || document.querySelector('.search')
+              || document.body;
+
+  let pane = document.getElementById('uploadPane');
+  if (!pane){
+    pane = document.createElement('section');
+    pane.id = 'uploadPane';
+    pane.className = 'card inline-details';
+    pane.innerHTML = `
+      <div class="view-header">
+        <button class="btn" id="uploadBackBtn">← Back</button>
+        <h2 class="view-title">Upload Documents</h2>
+      </div>
+
+      <div class="add-grid">
+        <div><label>PMB</label><div data-pmb></div></div>
+        <div><label>Name</label><div data-name></div></div>
+        <div><label>Company</label><div data-company></div></div>
+        <div><label>Source</label><div data-source></div></div>
+
+        <div style="grid-column:1 / -1">
+          <label for="upload_prefix">Prefix (required; e.g., primary, secondary)</label>
+          <input type="text" id="upload_prefix" placeholder="e.g., primary" required>
+        </div>
+
+        <div><label>Form 1583</label><input type="file" id="u_f_1583" accept=".pdf,image/*"></div>
+        <div><label>Address ID</label><input type="file" id="u_f_addr" accept=".pdf,image/*"></div>
+        <div><label>Photo ID</label><input type="file" id="u_f_pid"  accept=".pdf,image/*"></div>
+        <div style="grid-column:1 / -1" class="muted" id="upload_mini"></div>
+
+        <div style="grid-column:1 / -1;margin-top:8px">
+          <button class="btn btn--primary" id="uploadDoBtn" style="width:100%">Upload</button>
+          <button class="btn" id="uploadCancelBtn" style="width:100%;margin-top:5px">Cancel</button>
+        </div>
+
+        <div class="inline-head" style="grid-column:1 / -1;margin-top:12px">
+          <button id="openDriveFolderBtn_upl" class="btn btn--drive" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78.5" width="16" height="16" class="drive-icon">
+              <path fill="#4285f4" d="M44.1,0l43.2,75H56.1L12.9,0H44.1z"/>
+              <path fill="#34a853" d="M0,75h56.1L43.2,52H0V75z"/>
+              <path fill="#fbbc05" d="M44.1,0H12.9l43.2,75h31.2L44.1,0z"/>
+              <path fill="#ea4335" d="M0,52h43.2l12.9,23H0V52z"/>
+            </svg>
+            <span>Open in Drive</span>
+          </button>
+        </div>
+        <div id="upload_driveDocs" class="muted">Checking Drive…</div>
+
+        <pre id="upload_out" class="muted" style="white-space:pre-wrap"></pre>
+      </div>
+    `;
+    anchor.before(pane);
+
+  // Replace your old Back-button wiring with this (wire once, after pane.innerHTML):
+  pane.querySelector('#uploadBackBtn')?.addEventListener('click', e => { e.preventDefault(); closeUpload(); });
+  pane.querySelector('#uploadCancelBtn')?.addEventListener('click', e => { e.preventDefault(); closeUpload(); });
+  }
+  
+
+  pane.hidden = false;
+  pane.style.display = '';
+
+  // derive payload for this open
+  const encoded = btnEl?.dataset?.encoded || btnEl?.closest('.pill')?.dataset?.encoded || '';
+  const p = encoded ? JSON.parse(atob(encoded)) : (window.lastPayload || {});
+  const row = Array.isArray(p?.row) ? p.row : [];
+  const [pmb, first, last, company, _phone, _email, _addr, _status, source] = row;
+
+  // Reset form each time the drawer opens (prevents stale values/files)
+  resetUploadPane(pane);
+
+  // Fill summary fields
+  pane.querySelector('[data-pmb]')?.replaceChildren(document.createTextNode(pmb || ''));
+  pane.querySelector('[data-company]')?.replaceChildren(document.createTextNode(company || ''));
+  pane.querySelector('[data-name]')?.replaceChildren(document.createTextNode(`${(first||'').trim()} ${(last||'').trim()}`.trim()));
+  pane.querySelector('[data-source]')?.replaceChildren(document.createTextNode(source || ''));
+
+  // (Re)bind Upload button safely (remove old handler if any)
+  const uploadBtnEl = pane.querySelector('#uploadDoBtn');
+  if (uploadBtnEl && uploadBtnEl._handler){
+    uploadBtnEl.removeEventListener('click', uploadBtnEl._handler);
+  }
+  if (uploadBtnEl){
+    uploadBtnEl._handler = async () => {
+      const f1583    = pane.querySelector('#u_f_1583')?.files?.[0] || null;
+      const faddr    = pane.querySelector('#u_f_addr')?.files?.[0] || null;
+      const fpid     = pane.querySelector('#u_f_pid') ?.files?.[0] || null;
+      const prefixEl = pane.querySelector('#upload_prefix');
+      const prefix   = (prefixEl?.value || '').trim();
+
+      if (!prefix){
+        prefixEl?.focus();
+        await alertModal('Prefix is required (e.g., primary, secondary).', { title: 'Missing Prefix' });
+        return;
+      }
+
+      const files = [{field:'form_1583',f:f1583},{field:'address_id',f:faddr},{field:'photo_id',f:fpid}].filter(x=>!!x.f);
+      if (!files.length){
+        await alertModal('Pick at least one file to upload.', { title: 'No Files' });
+        return;
+      }
+      const total = files.reduce((n,x)=> n + (x.f?.size||0), 0);
+      if (total > 10*1024*1024){
+        await alertModal('Total upload size exceeds 10 MB.', { title: 'Too Large' });
+        return;
+      }
+
+      if (!(await ensureGoogleConnectedWithPopup())) return;
+
+      const row = Array.isArray(p?.row) ? p.row : [];
+      const [pmb, first, last, company, _ph, _em, _ad, _st, source] = row;
+      const fd = new FormData();
+      fd.append('partner', getPartnerFromPayload(source));
+      fd.append('pmb', String(pmb));
+      fd.append('subscriber_name', buildSubscriberName(first, last, company || ''));
+      fd.append('prefix', prefix);
+      const folderId = pane.dataset.folderId || '';
+      if (folderId) fd.append('folderId', folderId);
+      for (const x of files) fd.append(x.field, x.f);
+
+      try {
+        toggleLoading(true, { title: 'Drive Upload', text: 'Uploading Documents' });
+
+        const r = await fetch('/evotechmail/api/drive/direct-upload', { method:'POST', body: fd, credentials:'include' });
+        const isJSON = (r.headers.get('content-type')||'').includes('application/json');
+        const data = isJSON ? await r.json() : { error:`HTTP ${r.status}`, detail:(await r.text()).slice(0,200) };
+
+        if (!r.ok || data?.error){
+          toggleLoading(false);
+          await alertModal('Error uploading documents: ' + (data?.error || `HTTP ${r.status}`), { title: 'Upload Failed' });
+          return;
+        }
+
+        const names = (data.uploaded || []).map(u => u.name).join(', ');
+        toggleLoading(false);
+        await alertModal(names ? `Uploaded: ${names}` : 'Documents uploaded successfully.\n', { title: 'Saved' });
+
+        // Reset the pane after a successful upload
+        resetUploadPane(pane);
+
+        // Refresh Drive list for this subscriber
+        await loadDriveDocsForPayloadScoped(p, pane);
+      } catch(e){
+        console.error('prefixed upload error', e);
+        toggleLoading(false);
+        await alertModal('Error uploading documents: ' + (e?.message || String(e)), { title: 'Upload Failed' });
+      } finally {
+        toggleLoading(false);
+      }
+    };
+    uploadBtnEl.addEventListener('click', uploadBtnEl._handler);
+  }
+
+  // Initial Drive list (also sets/hides the Open in Drive button)
+  await loadDriveDocsForPayloadScoped(p, pane);
+};
+
+
+///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
+
 
 /* Render (PMB + name + company) + actions (View, Edit, Inactivate, Restore) */
 function render(items = []) {
@@ -313,6 +871,13 @@ function render(items = []) {
           </svg>
         </button>
 
+        <!-- Drive Upload -->
+        <button class="icon-btn upload-btn" title="Upload to Drive" aria-label="Upload to Drive" data-encoded="${encoded}">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="#0b7285" d="M5 20h14a1 1 0 0 0 1-1v-6h-2v5H6v-5H4v6a1 1 0 0 0 1 1zm6-14.59V16a1 1 0 1 0 2 0V5.41l2.3 2.3a1 1 0 0 0 1.4-1.42l-4-4a1 1 0 0 0-1.4 0l-4 4A1 1 0 1 0 8.7 7.7L11 5.41z"/>
+          </svg>
+        </button>
+
         <!-- Inactivate (Close): active only when status=closed && bcg!=closed -->
         <button class="icon-btn inact-btn${canClose ? '' : ' disabled'}" title="Inactivate" aria-label="Inactivate" onclick="inactivateSubscriber(${s.subscriber_id})"
           data-id="${s.subscriber_id ?? ''}" ${canClose ? '' : 'disabled'}>
@@ -337,6 +902,8 @@ function render(items = []) {
     const inactBtn   = el.querySelector('.inact-btn');
     const restoreBtn = el.querySelector('.restore-btn');
     const inboxBtn   = el.querySelector('.inbox-btn');
+    const uploadBtn  = el.querySelector('.upload-btn');
+
 
     viewBtn.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -349,6 +916,11 @@ function render(items = []) {
         const b64 = editBtn.dataset.encoded;
         openEditInlineFromBtn(editBtn, b64);
       });
+
+    uploadBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      openUploadDrawerFromBtn(uploadBtn);
+    });
       
 
     inactBtn.addEventListener('click', (ev) => {
@@ -425,15 +997,336 @@ function svg(pathD){
     trash: 'M6 7h12v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3-3h6l1 2H8l1-2z'
   };
   
-  
-    
+    ////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
     /* Search-as-you-type (empty query => empty list) */
+    ////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
+
+    function autoPopulateFilterSource(){
+      const pmb = parseInt(document.getElementById('f_pmb')?.value || '', 10);
+      const sourceField = document.getElementById('f_source');
+      if (!sourceField || isNaN(pmb)) return;
+
+      let correctSource = 'Owner';
+      if (pmb >= 100 && pmb <= 499) {
+        correctSource = 'PostScanMail';
+      } else if (pmb >= 500 && pmb <= 899) {
+        correctSource = 'AnyTimeMailBox';
+      } else if (pmb >= 900 && pmb <= 1299) {
+        correctSource = 'iPostal';
+      } else if (pmb >= 1300) {
+        correctSource = 'Davinci';
+      }
+      sourceField.value = correctSource;
+    }
+
+
+
+    const qInput = document.getElementById('q');
+    const qClear = document.getElementById('qClear');
+    const helpBtn = document.getElementById('searchHelpBtn');
+    const helpPop = document.getElementById('searchHelpPopover');
+
+    function updateClearVisibility(){
+      if (!qClear) return;
+      const hasText = (qInput?.value || '').length > 0;
+      qClear.hidden = !hasText;
+     // update counts
+    const countEl = document.getElementById('searchCounts');
+    if (countEl) {
+      countEl.textContent = '';
+    }
+    }
+
+    // toggle on input
+    qInput?.addEventListener('input', updateClearVisibility);
+    // initial state (in case of prefilled query)
+    updateClearVisibility();
+
+    // clear click
+    qClear?.addEventListener('click', () => {
+      if (!qInput) return;
+      qInput.value = '';
+      qInput.dispatchEvent(new Event('input')); // triggers your search to clear results
+      qInput.focus();
+    });
+
+    // help popover (unchanged)
+    helpBtn?.addEventListener('click', () => {
+      helpPop.hidden = !helpPop.hidden;
+    });
+    document.addEventListener('click', (e) => {
+      if (!helpBtn.contains(e.target) && !helpPop.contains(e.target)) helpPop.hidden = true;
+    });
+
+
+    // --- Filter Drawer (inputs only; blank fields auto-add -flags) ---
+    (() => {
+    const $  = (id)=>document.getElementById(id);
+    const qEl = $('q');
+
+    // tiny cache so we only fetch lookups once
+    let LOOKUPS = null;
+
+    async function getLookups(){
+      if (LOOKUPS) return LOOKUPS;
+      const r = await fetch('/evotechmail/api/lookups');
+      if (!r.ok) throw new Error('lookups HTTP '+r.status);
+      LOOKUPS = await r.json();
+      return LOOKUPS;
+    }
+
+    function fillSelect(sel, items, placeholder){
+      if (!sel) return;
+      const cur = sel.getAttribute('data-current') || '';
+      sel.innerHTML = `<option value="">${placeholder}</option>` +
+        (items||[]).map(o => {
+          const v = o.code ?? o.label ?? '';
+          const t = o.label ?? o.code ?? '';
+          const selAttr = (String(v) === String(cur)) ? ' selected' : '';
+          return `<option value="${escapeHtml(v)}"${selAttr}>${escapeHtml(t)}</option>`;
+        }).join('');
+    }
+
+    // very small helper you already have variants of
+    function escapeHtml(s=''){ return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    $('filterBtn')?.addEventListener('click', async () => {
+      openSheet({
+        title: 'Filter Subscribers',
+        bodyHTML: `
+          <form id="filterForm" class="grid" style="grid-template-columns:1fr 1fr; gap:10px;">
+            <div><label>PMB</label><input type="text" id="f_pmb"></div>
+
+            <div>
+              <label>Status</label>
+              <select id="f_status" data-current=""></select>
+            </div>
+
+            <div><label>First Name</label><input type="text" id="f_first"></div>
+            <div><label>Last Name</label><input type="text" id="f_last"></div>
+
+            <div><label>Company</label><input type="text" id="f_company"></div>
+            <div><label>Phone</label><input type="text" id="f_phone"></div>
+            <div><label>Email</label><input type="text" id="f_email"></div>
+
+            <div>
+              <label>Source</label>
+              <select id="f_source" data-current=""></select>
+            </div>
+
+            <div>
+              <label>BCG</label>
+              <select id="f_bcg" data-current=""></select>
+            </div>
+
+            <div class="full"><label>Address contains</label><input type="text" id="f_address"></div>
+            <div class="full"><label>Notes contain</label><input type="text" id="f_notes"></div>
+          </form>
+        `,
+        footerHTML: `
+          <button id="filterApplyBtn" class="btn btn--primary">Apply Filter</button>
+          <button id="filterClearBtn" class="btn">Clear</button>
+        `,
+        async onOpen(){
+        // 1) Load lookups and populate selects
+        try {
+          const lk = await getLookups();
+          fillSelect(document.getElementById('f_status'), lk.statuses, 'Any status');
+          fillSelect(document.getElementById('f_source'), lk.sources,  'Any source');
+          fillSelect(document.getElementById('f_bcg'),    lk.bcg,      'Any BCG');
+        } catch(e){
+          console.error('lookups failed:', e);
+        }
+
+        // 2) Prefill from current #q (do NOT reset form)
+        const qNow = (document.getElementById('q')?.value || '').trim();
+
+        // Helper: loose tokenization
+        const rawTokens = qNow.toLowerCase().split(/\s+/).filter(Boolean);
+
+        // Separate flags (start with '-') from normal terms
+        const terms = [];
+        const flags = new Set();
+        for (const t of rawTokens){
+          if (t.startsWith('-')) flags.add(t);
+          else terms.push(t);
+        }
+
+        // Detect obvious structured values from terms
+        const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+        const isPhone = s => /^(?:\+?\d[\d\s\-().]{6,}\d)$/.test(s);   // simple loose
+        const isNum   = s => /^\d+$/.test(s);
+
+        // Try to match lookup-coded terms into selects (by code OR label)
+        const pickFromLookup = (list, term) => {
+          const t = term.toLowerCase();
+          return list.find(o =>
+            String(o.code ?? '').toLowerCase() === t ||
+            String(o.label ?? '').toLowerCase() === t
+          ) || null;
+        };
+
+        const F = id => document.getElementById(id);
+        const setIfBlank = (id, v) => {
+          const el = F(id);
+          if (!el) return;
+          if (!(el.value || '').trim() && v) el.value = v;
+        };
+        const setSelectIfBlank = (id, codeValue) => {
+          const el = F(id);
+          if (!el) return;
+          if (!(el.value || '').trim() && codeValue) {
+            el.value = codeValue;
+            el.setAttribute('data-current', codeValue); // persist across re-opens
+          }
+        };
+
+        // Pull lookups once for matching
+        let lk = LOOKUPS;
+        try { lk = lk || await getLookups(); } catch {}
+
+        for (const t of terms) {
+          if (isEmail(t)) { setIfBlank('f_email', t); continue; }
+          if (isPhone(t)) { setIfBlank('f_phone', t); continue; }
+          if (isNum(t))   { setIfBlank('f_pmb',   t); continue; }
+
+          if (lk) {
+            const s1 = pickFromLookup(lk.statuses || [], t);
+            if (s1) { setSelectIfBlank('f_status', s1.code ?? s1.label); continue; }
+
+            const s2 = pickFromLookup(lk.sources || [], t);
+            if (s2) { setSelectIfBlank('f_source', s2.code ?? s2.label); continue; }
+
+            const s3 = pickFromLookup(lk.bcg || [], t);
+            if (s3) { setSelectIfBlank('f_bcg',    s3.code ?? s3.label); continue; }
+          }
+
+          // Heuristics for common source words (if lookups didn’t catch them)
+          if (['owner','postscan','post scan','anytime','anytime mailbox','ipostal','davinci']
+              .includes(t.replace(/\s+/g,' '))) {
+            setSelectIfBlank('f_source', t);
+            continue;
+          }
+        }
+
+        // Flags are informational for search; we do not auto-fill inputs from them.
+        // (e.g. -fname / -lname keep excluding in the parser, but First/Last inputs remain blank)
+
+        // 3) Wire footer buttons
+        document.getElementById('filterClearBtn')?.addEventListener('click', () => {
+          document.getElementById('filterForm')?.reset();
+          ['f_status','f_source','f_bcg'].forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('data-current','');
+          });
+        });
+
+        const pmbEl = document.getElementById('f_pmb');
+        pmbEl?.addEventListener('input', autoPopulateFilterSource);
+
+        document.getElementById('filterApplyBtn')?.addEventListener('click', () => {
+          const v = id => (document.getElementById(id)?.value || '').trim();
+          autoPopulateFilterSource();
+
+          const vals = {
+            pmb:     v('f_pmb'),
+            status:  v('f_status'),
+            first:   v('f_first'),
+            last:    v('f_last'),
+            company: v('f_company'),
+            phone:   v('f_phone'),
+            email:   v('f_email'),
+            source:  v('f_source'),
+            bcg:     v('f_bcg'),
+            address: v('f_address'),
+            notes:   v('f_notes'),
+          };
+
+          const termsOut = Object.values(vals).filter(Boolean);
+
+          const autoFlags = [];
+          if (!vals.first)   autoFlags.push('-fname');
+          if (!vals.last)    autoFlags.push('-lname');
+          if (!vals.company) autoFlags.push('-company');
+          if (!vals.email)   autoFlags.push('-email');
+          if (!vals.phone)   autoFlags.push('-phone');
+          if (!vals.address) autoFlags.push('-address');
+          if (!vals.notes)   autoFlags.push('-notes');
+
+          const query = [...termsOut, ...autoFlags].join(' ').trim();
+          if (qEl){
+            qEl.value = query;
+            qEl.dispatchEvent(new Event('input'));
+          }
+
+          // persist current select choice across drawer re-opens in-session
+          ['f_status','f_source','f_bcg'].forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('data-current', el.value || '');
+          });
+
+          // Do NOT clear the form (per your requirement)
+          closeSheet();
+        });
+      }
+
+      });
+    });
+  })();
+
+
+
+    // Groups to exclude when flags are present
+    const SEARCH_FIELD_GROUPS = {
+      address: ['primary_address', 'addressesJson'],
+      name:    ['first_name', 'last_name'],  // -name excludes both (legacy)
+      fname:   ['first_name'],               // -fname excludes first_name only
+      lname:   ['last_name'],                // -lname excludes last_name only
+      email:   ['email'],
+      phone:   ['phone'],
+      company: ['company'],
+      notes:   ['notesJson'],
+    };
+
+    // All keys that can appear in the searchable haystack
+    const SEARCHABLE_KEYS = new Set([
+      'pmb','first_name','last_name','company','phone','email',
+      'primary_address','status','source','bcg','notesJson','addressesJson'
+    ]);
+
+    function valueToText(v){
+      if (v == null) return '';
+      if (typeof v === 'string') return v;
+      try { return JSON.stringify(v); } catch { return String(v); }
+    }
+
+    // Build a single string to search from a record 's' honoring exclusions
+    function buildHaystack(s, excludedGroups){
+      const excludeKeys = new Set(
+        Array.from(excludedGroups).flatMap(g => SEARCH_FIELD_GROUPS[g] || [])
+      );
+      const parts = [];
+      for (const [k, v] of Object.entries(s)) {
+        if (!SEARCHABLE_KEYS.has(k)) continue;
+        if (excludeKeys.has(k)) continue;
+        parts.push(valueToText(v));
+      }
+      return parts.join(' ').toLowerCase();
+    }
+
+
     let t = null;
     qEl.addEventListener('input', async (e) => {
       clearTimeout(t);
-      const q = e.target.value.trim().toLowerCase();
+      const raw = e.target.value || '';
       t = setTimeout(async () => {
-        if (!q){ listEl.innerHTML = ''; return; }    // match scan.html behavior
+        const q = raw.trim();
+        if (!q){ listEl.innerHTML = ''; return; }
+
         if (!fetched){
           try { await loadFetchAll(); }
           catch(err){
@@ -442,22 +1335,64 @@ function svg(pathD){
             return;
           }
         }
-        // to only search pmb name and company
-        /*
+
+        // Parse tokens: collect exclude flags and positive terms
+        // ... inside your existing qEl.addEventListener('input', ...) handler:
+        const tokens   = q.toLowerCase().split(/\s+/).filter(Boolean);
+        const excluded = new Set();
+        const terms    = [];
+
+        // NEW: a single source of truth for all exclude groups
+        const ALL_GROUPS = ['address','name','fname','lname','company','notes','email','phone'];
+
+        for (const tok of tokens) {
+          if (tok === '-all') {
+            // NEW: exclude all groups in one shot
+            ALL_GROUPS.forEach(g => excluded.add(g));
+          } else if (tok === '-address' || tok === '-addresses') excluded.add('address');
+          else if (tok === '-name')                               excluded.add('name');
+          else if (tok === '-fname')                              excluded.add('fname');
+          else if (tok === '-lname')                              excluded.add('lname');
+          else if (tok === '-company')                            excluded.add('company');
+          else if (tok === '-notes' || tok === '-note')           excluded.add('notes');
+          else if (tok === '-email' || tok === '-emails')         excluded.add('email');
+          else if (tok === '-phone')                              excluded.add('phone');
+          else terms.push(tok);
+        }
+
+
         const out = all.filter(s => {
-          const pmb  = String(s.pmb ?? '').toLowerCase();
-          const name = [s.first_name, s.last_name].filter(Boolean).join(' ').toLowerCase();
-          const co   = String(s.company ?? '').toLowerCase();
-          return pmb.includes(q) || name.includes(q) || co.includes(q);
+          const hay = buildHaystack(s, excluded);
+          // AND across all positive terms
+          return terms.every(t => hay.includes(t));
         });
-        */
-        /* Search everything
-        const out = all.filter(s => {
-          return Object.values(s).some(v =>
-            String(v || '').toLowerCase().includes(q)
-          );
-        });
-        */
+
+        // update counts
+        const countEl = document.getElementById('searchCounts');
+        if (countEl) {
+          countEl.textContent = `${out.length} out of ${all.length} Subscribers`;
+        }
+
+        render(out);
+
+      }, 140);
+    });
+
+    /* OLD SEARCH
+    let t = null;
+    qEl.addEventListener('input', async (e) => {
+      clearTimeout(t);
+      const q = e.target.value.trim().toLowerCase();
+      t = setTimeout(async () => {
+        if (!q){ listEl.innerHTML = ''; return; }
+        if (!fetched){
+          try { await loadFetchAll(); }
+          catch(err){
+            console.error('fetch-all failed:', err);
+            listEl.innerHTML = '<div class="muted">Error loading records</div>';
+            return;
+          }
+        }
 
         const terms = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
 
@@ -470,6 +1405,7 @@ function svg(pathD){
         render(out);
       }, 140);
     });
+    */
     
     /* Manual refresh: refetch and reapply current query */
     $('refreshBtn')?.addEventListener('click', async () => {
@@ -498,41 +1434,83 @@ function svg(pathD){
       return m ? m[0] : str || '—';
     };
 
+
+    // constants
+    //const TILE_EXCLUDE_FLAGS = '-fname -lname -company -email -phone -address -notes';
+    const TILE_EXCLUDE_FLAGS = '-all';
+
+    // render "A = N" lines as link-like buttons that set #q
+    function renderTileLines(el, text, extrasTerms = []) {
+      if (!el) return;
+      const lines = String(text || '').split(/\r?\n/);
+      el.innerHTML = ''; // replace existing content
+
+      for (const raw of lines) {
+        const m = /^\s*(.*?)\s*=\s*(\d+)\s*$/.exec(raw) || [];
+        const label = (m[1] || raw).trim();       // words before '=' (or the full line)
+        const count = m[2] || '';                 // number after '=' if present
+        if (!label) continue;
+
+        // Build the query: label + any extra terms + the exclude flags
+        const base = [label, ...extrasTerms].filter(Boolean).join(' ').trim();
+        const query = [base, TILE_EXCLUDE_FLAGS].filter(Boolean).join(' ').trim();
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tile-line-link';
+        btn.dataset.q = query;
+        btn.textContent = count ? `${label} = ${count}` : label;
+
+        el.appendChild(btn);
+      }
+    }
+
+    // one-time delegation for all tiles
+    (function wireTileClicks(){
+      const tilesRoot = document.getElementById('dashboardTiles');
+      if (!tilesRoot) return;
+      tilesRoot.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.tile-line-link');
+        if (!btn) return;
+        const qEl = document.getElementById('q');
+        if (!qEl) return;
+        qEl.value = btn.dataset.q || '';
+        qEl.dispatchEvent(new Event('input'));
+      });
+    })();
+
+
     async function loadHeaderValues() {
       try {
-        const r = await fetch('/evotechmail/api/header-values', {
-          // credentials: 'include'   // uncomment if session cookie is needed
-        });
+        const r = await fetch('/evotechmail/api/header-values');
         if (!r.ok) {
-          console.error('header-values HTTP', r.status, await r.text().catch(() => ''));
+          console.error('header-values HTTP', r.status, await r.text().catch(()=>''));
           return;
         }
         const values = await r.json();
 
-        // Optional hook
         if (typeof window.displaySheetValues === 'function') {
           await window.displaySheetValues(values);
         }
 
-        // Map API keys -> tile IDs
+        // Which key goes to which tile, and any extra terms to add
         const map = [
-          { key: 'Active Subscribers', id: 'activeSubscribersValue' },
-          { key: 'All Subscribers',    id: 'allSubscribersValue' },
-          { key: 'USPS BCG Actions',   id: 'uspsBcgActionsValue' }
+          { key: 'Active Subscribers', id: 'activeSubscribersValue', extras: ['Active'] },
+          { key: 'All Subscribers',    id: 'allSubscribersValue',    extras: [] },
+          { key: 'USPS BCG Actions',   id: 'uspsBcgActionsValue',    extras: [] },
         ];
 
-        for (const { key, id } of map) {
+        for (const { key, id, extras } of map) {
           const el = document.getElementById(id);
-          if (el && values[key]) {
-            // Preserve line breaks in the tile
-            el.textContent = values[key];
-          }
+          if (!el || !values[key]) continue;
+          renderTileLines(el, values[key], extras);
         }
 
       } catch (e) {
         console.error('loadHeaderValues error:', e);
       }
     }
+
 
 
     // parses arrays that might arrive as real arrays OR JSON strings; otherwise null
@@ -857,6 +1835,10 @@ function populateDetailsPane(payload) {
 
   const titleEl = document.getElementById('view_title');
   if (titleEl) titleEl.textContent = `Subscriber • PMB ${pmb ?? ''}`;
+
+  //Load Drive documents
+  loadDriveDocsForPayload(payload).catch(console.error);
+
 }
 
 function showDetailsPaneWithPayloadInline(payload, hostPill){
@@ -1093,86 +2075,233 @@ function hideDetailsPaneRestoreList(){
     if (bcg) bcg.value = 'New';
   }
 
-  // Submit (modernized from your legacy checkAndAddRecord)
-  async function submitAddSubscriber(){
-    const get = id => document.getElementById(id);
+  function resetDocsUI() {
+    const ids = ['f_1583','f_photo_id','f_addr_id'];
+    ids.forEach(id => {
+      const inp = document.getElementById(id);
+      const nameEl = document.getElementById(id + '_name');
+      if (inp) inp.value = '';
+      if (nameEl) nameEl.textContent = '';
+    });
+    const mini = document.getElementById('uploadMiniStatus');
+    if (mini) mini.textContent = '';
+  }
 
-    const pmb   = (get('add_pmb')?.value || '').trim();
-    if (!/^\d+$/.test(pmb)) return alertModal('Please enter a valid numeric PMB.');
 
-    const email = (get('add_email')?.value || '').trim();
-    if (email && !validateEmail(email)) return alertModal('Please enter a valid email address.');
+async function submitAddSubscriber(){
+  const get = (id) => document.getElementById(id);
 
-    const srcEl = get('add_source');
-    const stEl  = get('add_status');
+// ==== your original validation ====
+  const pmb   = (get('add_pmb')?.value || '').trim();
+  if (!/^\d+$/.test(pmb)) return alertModal('Please enter a valid numeric PMB.');
 
-    const source = srcEl?.selectedOptions?.[0]?.dataset?.code || (srcEl?.value || '').trim();
-    const status = stEl?.selectedOptions?.[0]?.dataset?.code || (stEl?.value  || '').trim();
+  const email = (get('add_email')?.value || '').trim();
+  if (email && !validateEmail(email)) return alertModal('Please enter a valid email address.');
 
-    if (!status) return alertModal('Please select a Status.');
-    if (!source) return alertModal('Please select a Source.');
+  const srcEl = get('add_source');
+  const stEl  = get('add_status');
 
-    const firstName = (get('add_firstName')?.value || '').trim();
-    const lastName  = (get('add_lastName')?.value  || '').trim();
-    const phone     = (get('add_phone')?.value     || '').trim();
+  const source = srcEl?.selectedOptions?.[0]?.dataset?.code || (srcEl?.value || '').trim();
+  const status = stEl?.selectedOptions?.[0]?.dataset?.code || (stEl?.value  || '').trim();
 
-    if (!firstName) return alertModal('Please enter a First Name.');
-    if (!lastName)  return alertModal('Please enter a Last Name.');
-    if (!phone)     return alertModal('Please enter a Phone number.');
+  if (!status) return alertModal('Please select a Status.');
+  if (!source) return alertModal('Please select a Source.');
 
-    const addrEl = get('add_primaryAddress');
-    const primaryAddressOneLine = toOneLineAddress(addrEl?.value || '');
-    if (!primaryAddressOneLine){
-      alertModal('Primary Address is required.');
-      addrEl?.focus({ preventScroll:true });
-      addrEl?.scrollIntoView({ block:'center' });
-      return;
-    }
+  const firstName = (get('add_firstName')?.value || '').trim();
+  const lastName  = (get('add_lastName')?.value  || '').trim();
+  const phone     = (get('add_phone')?.value     || '').trim();
 
-    const payload = {
-      pmb,
-      firstName,
-      lastName,
-      company:        (get('add_company')?.value || '').trim(),
-      phone,
-      email,
-      status,
-      source,
-      primaryAddress: primaryAddressOneLine,
-      notes:          (get('add_notes')?.value || '').trim()
-    };
+  if (!firstName) return alertModal('Please enter a First Name.');
+  if (!lastName)  return alertModal('Please enter a Last Name.');
+  if (!phone)     return alertModal('Please enter a Phone number.');
 
-    // Optional: small loading state
-    const saveBtn = document.getElementById('addSaveBtn');
-    const oldLabel = saveBtn?.textContent;
-    if (saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+  const addrEl = get('add_primaryAddress');
+  const primaryAddressOneLine = toOneLineAddress(addrEl?.value || '');
+  if (!primaryAddressOneLine){
+    alertModal('Primary Address is required.');
+    addrEl?.focus({ preventScroll:true });
+    addrEl?.scrollIntoView({ block:'center' });
+    return;
+  }
 
-    try {
-      const r = await fetch('/evotechmail/api/subscribers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const ct = r.headers.get('content-type') || '';
-      const body = ct.includes('application/json') ? await r.json() : await r.text();
-      if (!r.ok) throw new Error(body?.error || (typeof body === 'string' ? body : 'Add failed'));
+  // payload for your DB
+  const payload = {
+    pmb,
+    firstName,
+    lastName,
+    company:        (get('add_company')?.value || '').trim(),
+    phone,
+    email,
+    status,
+    source,
+    primaryAddress: primaryAddressOneLine,
+    notes:          (get('add_notes')?.value || '').trim()
+  };
 
-      alertModal(`Subscriber with PMB ${pmb} (id ${body.subscriber_id}) added successfully.`);
-      clearAddForm();
-      closeAddInline();
+  // UI bits
+  const saveBtn = $('addSaveBtn');
+  const oldLabel = saveBtn?.textContent;
+  const mini = $('uploadMiniStatus');     // small area under file inputs
+  const attachDocs = $('add_attachDocs')?.checked;
 
-      // Refresh list and tiles using your existing loaders
-      await loadFetchAll();
-      await loadHeaderValues();
+  if (saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+  if (mini) mini.textContent = '';
 
-      // Re-apply current query
-      qEl?.dispatchEvent(new Event('input'));
-    } catch (e) {
-      alertModal('Error adding subscriber: ' + (e?.message || String(e)));
-    } finally {
-      if (saveBtn){ saveBtn.disabled = false; saveBtn.textContent = oldLabel || 'Add Subscriber'; }
+  try {
+    toggleLoading(true, { title: 'Add', text: 'Add Subscriber & Upload Documents' });
+    // 1) Create in DB (unchanged)
+    const r = await fetch('/evotechmail/api/subscribers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const ct = r.headers.get('content-type') || '';
+    const body = ct.includes('application/json') ? await r.json() : await r.text();
+    if (!r.ok) throw new Error(body?.error || (typeof body === 'string' ? body : 'Add failed'));
+
+
+  // 2) If user checked "Attach ID documents", push to Drive now
+  let uploadSummaryLines = [];          // <-- move this to the top of submitAddSubscriber if you prefer
+  let uploadHadError = false;           // track if any file failed
+
+  if (attachDocs) {
+    // don't throw on Drive issues — we want to show them in the success modal
+    const f1583 = $('f_1583')?.files?.[0] || null;
+    const fpid  = $('f_photo_id')?.files?.[0] || null;
+    const faddr = $('f_addr_id')?.files?.[0] || null;
+
+    const files = [
+      { label:'1583',      type:'1583',   field:'form_1583',  file: f1583 },
+      { label:'Photo ID',  type:'PHOTO',  field:'photo_id',   file: fpid  },
+      { label:'Address ID',type:'ADDRESS',field:'address_id', file: faddr }
+    ].filter(x => !!x.file);
+
+    // If nothing selected, just leave uploadSummaryLines empty
+    if (files.length) {
+      // size guard (<=10MB total)
+      const total = files.reduce((n,x)=> n + (x.file.size||0), 0);
+      if (total > 10 * 1024 * 1024) {
+        uploadHadError = true;
+        uploadSummaryLines = files.map(x => `❌ ${x.label}${x.file?.name ? ` — ${x.file.name}` : ''} (total > 10MB)`);
+      } else {
+        // Try popup connection; if not connected, mark all as failed but continue
+        let connected = false;
+        try {
+          connected = await ensureGoogleConnectedWithPopup();
+        } catch { connected = false; }
+        if (!connected) {
+          uploadHadError = true;
+          uploadSummaryLines = files.map(x => `❌ ${x.label}${x.file?.name ? ` — ${x.file.name}` : ''} (Drive not connected)`);
+        } else {
+          // Build and send upload
+          const { partner, pmb, subscriber_name } = getDriveCtx();
+          const fd = new FormData();
+          fd.append('partner', partner);
+          fd.append('pmb', pmb);
+          fd.append('subscriber_name', subscriber_name);
+          for (const x of files) fd.append(x.field, x.file);
+
+          try {
+            const upRes = await fetch('/evotechmail/api/drive/smart-upload', {
+              method: 'POST',
+              body: fd,
+              credentials: 'include'
+            });
+
+            const isJSON = (upRes.headers.get('content-type')||'').includes('application/json');
+            const data = isJSON ? await upRes.json() : { error: `HTTP ${upRes.status}` };
+
+            // ---- Robust status parsing (inline) ----
+            const normalizeItems = (d) => {
+              if (Array.isArray(d?.uploaded)) return d.uploaded;
+              if (Array.isArray(d?.results))  return d.results;
+              if (Array.isArray(d?.files))    return d.files;
+              if (Array.isArray(d))           return d;
+              return [];
+            };
+            const isSuccessItem = (it) => {
+              if (!it) return false;
+              if (it.error) return false;
+              if (it.ok === false) return false;
+              if (it.status && String(it.status).toLowerCase().match(/fail|error|denied|not/)) return false;
+              if (it.ok === true) return true;
+              if (it.id) return true;
+              if (it.status && String(it.status).toLowerCase().match(/uploaded|updated|created|ok|success/)) return true;
+              return false;
+            };
+            const matchesType = (it, needle, fileObj) => {
+              const n = String(needle).toUpperCase();
+              const lt = (it.logicalType || it.type || it.kind || '').toString().toUpperCase();
+              if (lt.includes(n)) return true;
+              const f = (it.field || it.srcField || it.uploadField || '').toString().toUpperCase();
+              if (f.includes(n)) return true;
+              const itName = (it.originalName || it.name || '').toString().toUpperCase();
+              if (fileObj?.name && itName && itName === fileObj.name.toUpperCase()) return true;
+              return false;
+            };
+
+            const items = normalizeItems(data);
+            const parts = [];
+            for (const x of files) {
+              const hit = items.find(it => matchesType(it, x.type, x.file));
+              const ok  = hit ? isSuccessItem(hit) : (upRes.ok && !data?.error);
+              const reason = !ok ? (hit?.error || hit?.detail || hit?.message || data?.error || 'failed') : '';
+              parts.push(`${ok ? '✅' : '❌'} ${x.label}${x.file?.name ? ` — ${x.file.name}` : ''}${!ok && reason ? ` (${reason})` : ''}`);
+              if (!ok) uploadHadError = true;
+            }
+            uploadSummaryLines = parts;
+
+            // mini line under inputs (ticks only)
+            if (mini) {
+              mini.textContent = parts
+                .map(p => p.replace('✅','✓').replace('❌','✗').replace(/\s*\(.+?\)$/, ''))
+                .join('  ·  ');
+            }
+            // ---- end robust status parsing ----
+          } catch (e) {
+            // Network/other fetch error — mark all as failed
+            uploadHadError = true;
+            const reason = e?.message ? e.message : 'upload failed';
+            uploadSummaryLines = files.map(x => `❌ ${x.label}${x.file?.name ? ` — ${x.file.name}` : ''} (${reason})`);
+          }
+        }
+      }
     }
   }
+
+    // Build the final modal message
+    const uploadBlock = uploadSummaryLines.length
+      ? `\n\nDrive upload:\n${uploadSummaryLines.join('\n')}`
+      : (attachDocs ? `\n\nDrive upload:\n(no files selected)` : '');
+
+    const headline = uploadHadError
+      ? `Subscriber with PMB ${pmb} (id ${body.subscriber_id}) added — but some documents did not upload.`
+      : `Subscriber with PMB ${pmb} (id ${body.subscriber_id}) added successfully.`;
+
+    alertModal(`${headline}${uploadBlock}`);
+
+    // clear & close (unchanged)
+    resetDocsUI();
+    clearAddForm();
+    closeAddInline();
+    $('add_attachDocs') && ($('add_attachDocs').checked = false);
+    $('add_docsBlock') && $('add_docsBlock').setAttribute('hidden','');
+
+    await loadFetchAll();
+    await loadHeaderValues();
+    $('q')?.dispatchEvent(new Event('input'));
+
+    toggleLoading(false);
+  } catch (e) {
+    alertModal('Error adding subscriber: ' + (e?.message || String(e)));
+    toggleLoading(false);
+  } finally {
+    if (saveBtn){ saveBtn.disabled = false; saveBtn.textContent = oldLabel || 'Add Subscriber'; }
+    toggleLoading(false);
+  }
+}
+
+
 
   document.getElementById('addSaveBtn')?.addEventListener('click', (e) => {
     e.preventDefault();
@@ -1386,6 +2515,9 @@ async function ensureLookupsAndPopulateEdit(){
     showEl(search);
     if (list)    showEl(list);
     if (details) hideEl(details);
+    // Unhide all pills
+    [...list.children].forEach(el => el.classList.remove('is-hidden'));
+    document.getElementById("dashback").style.display = "block";
   }
   
   // Build the edit form values out of the payload (row + notes/addresses JSON)
@@ -1441,7 +2573,7 @@ async function ensureLookupsAndPopulateEdit(){
     }
 
     // Baseline (for diff on save)
-    snapshotOriginalEditState()
+    snapshotOriginalEditState();
 
   }
 

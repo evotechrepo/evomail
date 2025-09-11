@@ -3,6 +3,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
 import path from 'path';
 
 import authRouter from './services/auth.js';
@@ -12,6 +13,7 @@ import { requireAuth } from './middleware/requireAuth.js';
 import reportsRouter from './services/reports.js';
 import adminRouter from './services/admin.js';
 import { requireAdmin } from './middleware/requireAdmin.js';
+import driveRouter from './services/drive.js';
 
 
 const app = express();
@@ -19,6 +21,19 @@ const app = express();
 app.set('trust proxy', 1); // so secure cookies & redirects behave correctly
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
+
+// session for Google OAuth tokens (use a store in prod)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60 * 1000
+  }
+}));
 
 // If UI is same origin through Apache, cors is optional; if not, enable with credentials:
 // app.use(cors({ origin: true, credentials: true }));
@@ -76,6 +91,9 @@ app.use('/admin'                , requireAuth, requireAdmin, adminRouter);
 const uploadDir = process.env.UPLOAD_DIR || path.resolve(process.cwd(), 'uploads');
 app.use('/uploads', requireAuth, express.static(uploadDir));
 
+const publicDir = path.resolve(process.cwd(), 'public');
+app.use('/evotechmail', requireAuth, express.static(publicDir));
+
 
 // Javascript - server.js
 app.use('/evotechmail/js', express.static(path.resolve(process.cwd(), 'public/js')));
@@ -91,6 +109,10 @@ app.get('/evotechmail/reports', requireAuth, requireAdmin, (req, res) => res.sen
 app.get('/evotechmail/email-utility', requireAuth, requireAdmin, (req, res) => res.sendFile(path.resolve(process.cwd(), 'public/mail.html')));
 //app.get('/email-utility', requireAuth, requireAdmin, (req, res) => res.sendFile(path.resolve(process.cwd(), 'public/mail.html')));
 
+
+// --- Google Drive routes (mounted under API + unprefixed for stripped proxies)
+app.use('/evotechmail/api/drive', driveRouter);
+app.use('/drive', driveRouter);
 
 const PORT = Number(process.env.PORT || 3000);
 //1 - //'127.0.0.1';   changed to 0.0.0.0 so I can access from other network devices

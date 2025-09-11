@@ -7,4 +7,5 @@
 *.env
 **/.env
 **/*.env
+db_environment.txt
 **/db_environment.txt

@@ -1,24 +1,23 @@
 # turn off directory listing
-Options -Indexes
-
+Options -Indexes -MultiViews
 RewriteEngine On
+RewriteBase /evotechmail/
+
+# protect internal dirs
 RewriteRule ^server/ - [F,L]
 RewriteRule ^tmp/    - [F,L]
 
+# default index
 DirectoryIndex public/index.html
 
-# assets/css/js under /public
+# map assets under /public
 RewriteRule ^(assets|js|css)/(.*)$ public/$1/$2 [L]
 
-# html under /public
+# allow pretty *.html paths
 RewriteRule ^([A-Za-z0-9_\-]+)\.html$ public/$1.html [L]
 
-
 AddDefaultCharset UTF-8
-
-# Force charset for these types:
 AddType 'text/html; charset=UTF-8' .html
 AddType 'application/javascript; charset=UTF-8' .js
 AddType 'text/css; charset=UTF-8' .css
 AddType 'application/json; charset=UTF-8' .json
-

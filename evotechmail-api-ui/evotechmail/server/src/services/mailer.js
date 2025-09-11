@@ -97,7 +97,7 @@ export async function getTransport(){
       : undefined;
   }
 
-  console.log('[mailer] SMTP config -> host:', host, 'port:', port, 'secure:', secure, 'mode:', mode);
+  //console.log('[mailer] SMTP config -> host:', host, 'port:', port, 'secure:', secure, 'mode:', mode);
 
   const tx = nodemailer.createTransport({
     host,

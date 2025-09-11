@@ -96,6 +96,9 @@
 ///////////////////// compliance.js ////////////////////////
 ////////////////////////////////////////////////////////////
 
+
+
+
 (function(){
     const $  = (s, r=document) => r.querySelector(s);
     const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -107,6 +110,13 @@
     const refreshEl = $('#refreshBtn');
     const loadedEl  = $('#loadedCount');
   
+    // Live totals for the initial dataset from the service
+    const Totals = {
+      open:   { comp: 0, non: 0 },   // status != Closed
+      closed: { comp: 0, non: 0 },   // status == Closed
+      done:   false                  // set true when the service indicates "no more"
+    };
+
     // State
     const S = {
       q: '',
@@ -144,42 +154,102 @@
   
       compSel.addEventListener('change', () => { S.compliant = compSel.value; reload(); });
     }
-  
+
+    function foldTotals(items){
+      for (const s of items){
+        const isClosed = String(s.status || '').toLowerCase() === 'closed';
+        const bucket = isClosed ? Totals.closed : Totals.open;
+        if (s.usps_compliant) bucket.comp++;
+        else bucket.non++;
+      }
+    }
+
+    function renderTotals(){
+      const openEl   = document.getElementById('compOpen');
+      const closedEl = document.getElementById('compClosed');
+      if (!openEl || !closedEl) return;
+
+      const suffix = Totals.done ? '' : ' …';
+
+      openEl.innerHTML =
+        `Active Subscribers: 
+        <span class="tick">✓ ${Totals.open.comp}</span> · 
+        <span class="cross">✗ ${Totals.open.non}</span>${suffix}`;
+
+      closedEl.innerHTML =
+        `Closed Subscribers: 
+        <span class="tick">✓ ${Totals.closed.comp}</span> · 
+        <span class="cross">✗ ${Totals.closed.non}</span>${suffix}`;
+
+    }
+
+    function resetTotals(){
+      Totals.open.comp = Totals.open.non = 0;
+      Totals.closed.comp = Totals.closed.non = 0;
+      Totals.done = false;
+      renderTotals();
+    }
+
+    async function loadOverallTotals(){
+      try {
+        const r = await fetch('/evotechmail/api/compliance/stats', { cache: 'no-store' });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const stats = await r.json();
+        Totals.open.comp   = stats?.open?.compliant ?? 0;
+        Totals.open.non    = stats?.open?.non_compliant ?? 0;
+        Totals.closed.comp = stats?.closed?.compliant ?? 0;
+        Totals.closed.non  = stats?.closed?.non_compliant ?? 0;
+        Totals.done = true;
+        renderTotals();
+      } catch (e) {
+        console.error('stats load failed:', e);
+        // Optional: keep pills blank or show zeros
+        Totals.done = true;
+        renderTotals();
+      }
+    }
+
+
+
     // Fetch
     async function fetchPage(){
-        if (S.busy || S.end) return [];
-        S.busy = true;
-        try {
-          const p = new URLSearchParams({
-            q: S.q || '',
-            status: S.status || '',
-            compliant: S.compliant || 'all',
-            limit: String(S.limit),
-            offset: String(S.offset)
-          });
-          const url = `/evotechmail/api/compliance/subscribers?${p.toString()}`;
-          const r = await fetch(url, { cache: 'no-store' });
-          if (!r.ok) {
-            console.error('Compliance fetch failed:', r.status, url);
-            // show a small inline note instead of throwing
-            const list = document.getElementById('list');
-            if (list && !list.children.length) {
-              list.innerHTML = `<div class="muted" style="padding:12px">Failed to load (${r.status}). Try Refresh.</div>`;
-            }
-            return [];
+      if (S.busy || S.end) return [];
+      S.busy = true;
+      try {
+        const p = new URLSearchParams({
+          q: S.q || '',
+          status: S.status || '',
+          compliant: S.compliant || 'all',
+          limit: String(S.limit),
+          offset: String(S.offset)
+        });
+        const url = `/evotechmail/api/compliance/subscribers?${p.toString()}`;
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) {
+          console.error('Compliance fetch failed:', r.status, url);
+          const list = document.getElementById('list');
+          if (list && !list.children.length) {
+            list.innerHTML = `<div class="muted" style="padding:12px">Failed to load (${r.status}). Try Refresh.</div>`;
           }
-          const j = await r.json();
-          const items = Array.isArray(j.items) ? j.items : [];
-          S.offset += items.length;
-          if (items.length < S.limit) S.end = true;
-          return items;
-        } catch (err) {
-          console.error('Compliance fetch error:', err);
           return [];
-        } finally {
-          S.busy = false;
         }
+
+        const j = await r.json();
+        const items = Array.isArray(j.items) ? j.items : [];
+
+        // track paging
+        S.offset += items.length;
+        if (items.length < S.limit) S.end = true;
+
+        return items;
+      } catch (err) {
+        console.error('Compliance fetch error:', err);
+        return [];
+      } finally {
+        S.busy = false;
       }
+    }
+
       
   
     // Render list
@@ -378,6 +448,7 @@ function openDetailsDrawer(s){
       s.usps_compliant = next;
       drawer.querySelector('#compNote').value = '';
       saveMsg.textContent = 'Saved';
+      loadOverallTotals(); // fire-and-forget is fine
       setTimeout(()=> saveMsg.textContent = '', 1200);
       // flip badge on the pill
       const badge = document.querySelector(`.pill[data-id="${s.subscriber_id}"] .badge-usps`);
@@ -428,7 +499,12 @@ function closeDrawer(){ drawer?.classList.remove('open'); }
   
     // Loading
     async function reload(){
+      resetTotals();
       S.offset = 0; S.end = false; S.items = [];
+
+      // kick overall totals (not paginated)
+      loadOverallTotals(); // fire-and-forget is fine
+
       const page = await fetchPage();
       S.items.push(...page);
       renderList(false);
@@ -454,8 +530,19 @@ function closeDrawer(){ drawer?.classList.remove('open'); }
   
     function updateCount(){
       loadedEl.textContent = `${S.items.length}${S.end ? '' : '+'} loaded`;
+
+      // overall compliant vs non-compliant
+      let compliant = 0, non = 0;
+      for (const s of S.items){
+        if (s.usps_compliant) compliant++;
+        else non++;
+      }
+      const compEl = document.getElementById('compSummary');
+      if (compEl){
+        compEl.textContent = `✓ ${compliant} Compliant · ✗ ${non} Non-Compliant`;
+      }
     }
-  
+
     function debounce(fn, ms=200){
       let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); };
     }

@@ -312,6 +312,30 @@
     }
   }
 
+/****************************************************/
+@media (max-width: 640px) {
+  .sheet {
+    place-items: start center;     /* anchor at top */
+  }
+
+  .sheet__inner {
+    width: 100dvw;                 /* dynamic viewport width */
+    height: 100dvh;                /* dynamic viewport height (correct in Safari) */
+    margin-top: 0;                 /* remove gap at top */
+    border-radius: 0;              /* edge-to-edge */
+    max-width: none !important;    /* remove desktop cap */
+  }
+
+  .sheet__body {
+    max-height: calc(100dvh - 100px);
+    overflow-y: auto;
+  }
+}
+
+
+
+/****************************************************/
+
   /* Sheet polish: sticky header/footer, snappier desktop drawer */
   .sheet__inner{
     display:flex; flex-direction:column;
@@ -466,7 +490,163 @@
     @media (max-width: 768px){
       input[type="text"], select, textarea { font-size: 16px; }
     }
-  </style>
+
+    /* Google Drive button */
+    .btn.btn--drive {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #f9fafb;
+      border: 1px solid #d1d5db;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn.btn--drive:hover {
+      background-color: #f3f4f6;
+      border-color: #9ca3af;
+    }
+
+    .drive-icon {
+      flex-shrink: 0;
+    }
+
+  /* Search row */
+  .search { display:flex; align-items:center; gap:8px; }
+  .search-box { position:relative; flex:1; }
+  .search-box input { width:100%; padding-right:28px; }
+
+  /* Help icon inside input */
+  .search-box .search-help {
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:18px; height:18px; border-radius:50%; background:#e5e7eb;
+    color:#374151; font-size:12px; font-weight:700; line-height:18px;
+    text-align:center; cursor:pointer;
+  }
+  .search-box .search-help:hover { background:#d1d5db; }
+
+  /* Popover */
+  .search-help-popover {
+    position:absolute; right:0; top:115%; background:#fff;
+    border:1px solid #d1d5db; border-radius:6px;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+    padding:6px 8px; font-size:12px; color:#374151;
+    width:250px; z-index:20;
+  }
+  .search-help-popover ul { margin:4px 0 0; padding-left:16px; }
+  .search-help-popover code {
+    background:#f3f4f6; padding:1px 3px; border-radius:4px;
+  }
+  /* Clear search*/
+  .search { display:flex; align-items:center; gap:8px; }
+  .search-box { position:relative; flex:1; }
+  .search-box input { width:100%; padding-right:56px; } /* room for clear + ? */
+
+  .search-box .search-clear,
+  .search-box .search-help {
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:18px; height:18px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#e5e7eb; color:#374151; cursor:pointer; border:0; padding:0;
+  }
+  .search-box .search-clear:hover,
+  .search-box .search-help:hover { background:#d1d5db; }
+
+  .search-box .search-clear { right:30px; }  /* clear goes before ? */
+  .search-box .search-help  { right:8px;  }
+
+  /* Load headers tiles css*/
+  .tile .value .tile-line-link {
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:2px 0;
+    background:transparent;
+    border:0;
+    color:#0ea5a6;             /* your teal */
+    cursor:pointer;
+  }
+  .tile .value .tile-line-link:hover { text-decoration: underline; }
+  /* Search count */
+/* make container wrap */
+.search{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  position: relative;
+}
+
+/* the chip: content width, first row */
+.search .search-counts{
+  /* keep your existing visual styles */
+  font-size: 13px;
+  font-weight: 600;
+  color: #0ea5b9;
+  background: #f8f2f2;
+  padding: 3px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  transition: background .2s ease, transform .15s ease;
+
+  /* key bits */
+  order: -2;             /* place before other kids */
+  flex: 0 0 auto;        /* shrink to content width */
+  position: static;      /* not absolute; participate in layout */
+  margin: 0 0 -4px 0;     /* space below */
+  /* optional: push to right of its row */
+  /*margin-left: auto;      remove if you want it left-aligned */
+}
+
+/* this creates a forced line-break after the chip */
+.search::after{
+  content: "";
+  order: -1;             /* comes right after the chip */
+  flex: 0 0 100%;        /* takes the rest of the row → next items wrap */
+}
+
+
+/* compact, mobile-first is already aligned with your sheet styles */
+.u2d-row{display:grid;grid-template-columns:1fr;gap:10px;margin:8px 0}
+@media(min-width:900px){.u2d-row{grid-template-columns:repeat(3,1fr)}}
+
+/* Scoped to Upload + Add panes */
+:is(#uploadPane, #addPane) input[type="file"]{
+  font-size:13px; color:#6b7280; margin-bottom:6px;
+}
+
+/* Button look (Chromium/Firefox + Safari/WebKit) */
+:is(#uploadPane, #addPane) input[type="file"]::file-selector-button,
+:is(#uploadPane, #addPane) input[type="file"]::-webkit-file-upload-button{
+  border:0; border-radius:9999px; padding:6px 14px; font-weight:600; cursor:pointer;
+  background:#f1f3f3; color:#242222; margin-right:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  transition:transform .08s, box-shadow .2s, filter .15s;
+}
+
+/* Hover / active */
+:is(#uploadPane, #addPane) input[type="file"]::file-selector-button:hover,
+:is(#uploadPane, #addPane) input[type="file"]::-webkit-file-upload-button:hover{
+  filter:brightness(.98); box-shadow:0 6px 14px rgba(0,0,0,.16); transform:translateY(-1px);
+}
+:is(#uploadPane, #addPane) input[type="file"]::file-selector-button:active,
+:is(#uploadPane, #addPane) input[type="file"]::-webkit-file-upload-button:active{
+  transform:translateY(0); box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+
+/* Focus ring */
+:is(#uploadPane, #addPane) input[type="file"]:focus-visible::file-selector-button,
+:is(#uploadPane, #addPane) input[type="file"]:focus-visible::-webkit-file-upload-button{
+  outline:2px solid rgba(14,165,185,.6); outline-offset:2px;
+}
+
+
+
+</style>
       
     
  
@@ -508,11 +688,43 @@
       </section>
       
       <main>
+
         <div class="search">
-          <!--<input id="q" type="text" placeholder="Search PMB, name, or company…"/> -->
+          <span id="searchCounts" class="search-counts">0 results</span>
           <button id="dashback" class="btn btn--primary--sm" onclick="history.back()">Back</button> <!-- CHANGED -->
-          <input  id="q" type="text" placeholder="Search PMB, name, company, etc…"/>
-          <button id="refreshBtn" class="btn btn--primary--sm">↻</button>
+          <!--<input  id="q" type="text" placeholder="Search PMB, name, company, etc…"/>-->
+          <div class="search-box">
+          <button id="qClear" class="search-clear" type="button" aria-label="Clear search" hidden>
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <path fill="currentColor" d="M13.41 12l5.3-5.29a1 1 0 10-1.42-1.42L12 10.59 6.71 5.29a1 1 0 10-1.42 1.42L10.59 12l-5.3 5.29a1 1 0 101.42 1.42L12 13.41l5.29 5.3a1 1 0 001.42-1.42z"/>
+            </svg>
+          </button>
+          <input type="text" id="q" placeholder="Search subscribers…"/>
+          <div class="search-help-wrap">
+            <span class="search-help" id="searchHelpBtn">?</span>
+            <div class="search-help-popover" id="searchHelpPopover" hidden>
+              <strong>Search flags</strong>
+              <ul>
+                <li><code>-all</code> exclude all fields(below)</li>
+                <li><code>-address</code> → exclude address fields</li>
+                <li><code>-name</code> → exclude First + Last Name</li>
+                <li><code>-fname</code> → exclude First Name</li>
+                <li><code>-lname</code> → exclude Last Name</li>
+                <li><code>-company</code> → exclude Company</li>
+                <li><code>-notes</code> → exclude Notes</li>
+                <li><code>-email</code> → exclude Email</li>
+                <li><code>-phone</code> → exclude Phone</li>
+              </ul>
+            </div>
+          </div>
+
+          </div>
+          <button id="filterBtn" class="btn btn--primary--sm icon-only" type="button" aria-label="Filter">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M3 5a1 1 0 0 1 1-1h16a1 1 0 0 1 .78 1.63L14 13.2V19a1 1 0 0 1-.58.9l-4 2A1 1 0 0 1 8 21v-7.8L2.22 6.63A1 1 0 0 1 3 5zm2 1 5.2 6.5a1 1 0 0 1 .2.6V19.7l2-1V13.1a1 1 0 0 1 .2-.6L19 6H5z"/>
+            </svg>
+          </button>
+          <button id="refreshBtn" class="btn btn--primary--sm icon-only">↻</button>
           <button id="addSubscriberTile" class="btn btn--primary" aria-label="Add Subscriber" title="Add Subscriber" onclick="openAddInline()">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path fill="currentColor" d="M11 11V6a1 1 0 1 1 2 0v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5z"/>
@@ -549,6 +761,27 @@
           <div class="inline-section">
             <div class="inline-head"><span>Notes</span></div>
             <div id="view_notesInline"></div>
+          </div>
+
+          <div class="inline-section">
+            <div class="inline-head">
+              <!--<button id="openDriveFolderBtn" class="btn btn--small" hidden>Open in Drive</button>-->
+              <div class="inline-head">
+              <span>
+              <button id="openDriveFolderBtn" class="btn btn--drive" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78.5" width="16" height="16" class="drive-icon">
+                  <path fill="#4285f4" d="M44.1,0l43.2,75H56.1L12.9,0H44.1z"/>
+                  <path fill="#34a853" d="M0,75h56.1L43.2,52H0V75z"/>
+                  <path fill="#fbbc05" d="M44.1,0H12.9l43.2,75h31.2L44.1,0z"/>
+                  <path fill="#ea4335" d="M0,52h43.2l12.9,23H0V52z"/>
+                </svg>
+                <span>Open in Drive</span>
+              </button>
+              </span>
+              </div>
+
+            </div>
+            <div id="view_driveDocs" class="muted">Checking Drive…</div>
           </div>
 
         </section>
@@ -618,6 +851,40 @@
               <label for="add_notes">Notes</label>
               <textarea id="add_notes" rows="4" placeholder="Enter Notes" class="ta-soft is-clickable"></textarea>
             </div>
+
+            <!-- Google Drive Upload -->
+            <!-- Attach documents -->
+            <div class="full">
+              <label>
+                <input type="checkbox" id="add_attachDocs">
+                Attach documents now
+              </label>
+
+              <div id="add_docsBlock" class="row" hidden>
+                <div>
+                  <label for="f_1583">Form 1583</label>
+                  <input type="file" id="f_1583" accept="application/pdf,image/*">
+                  <div id="f_1583_name" class="muted"></div>
+                </div>
+
+                <div>
+                  <label for="f_photo_id">Photo ID</label>
+                  <input type="file" id="f_photo_id" accept="application/pdf,image/*">
+                  <div id="f_photo_id_name" class="muted"></div>
+                </div>
+
+                <div>
+                  <label for="f_addr_id">Address ID</label>
+                  <input type="file" id="f_addr_id" accept="application/pdf,image/*">
+                  <div id="f_addr_id_name" class="muted"></div>
+                </div>
+
+                <!-- compact status (✓/✗ text) goes here -->
+                <div id="uploadMiniStatus" class="muted" aria-live="polite"></div>
+              </div>
+            </div>
+
+
           </div>
 
           <div class="btnrow" style="margin-top:10px;">
@@ -767,7 +1034,19 @@
         <span class="bt-ic" aria-hidden="true">▴</span>
       </button>
       
-      
+      <!-- Loading Modal -->
+      <section id="loading" class="loading" hidden aria-live="assertive" aria-modal="true" role="dialog" aria-label="Please wait">
+        <div class="loading__card" role="document">
+          <div class="loading__spinner" aria-hidden="true"></div>
+          <h2 id="loadingTitle" class="loading__title">Please wait…</h2>
+          <p id="loadingText" class="loading__text">Working on it</p>
+
+          <div id="loadingProgressWrap" class="loading__progress" hidden>
+            <div id="loadingProgressBar" class="loading__progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </section>
+
     <footer>
        <!--<button id="dashback" class="btn btn--primary" onclick="history.back()">Back</button> -->
     </footer>

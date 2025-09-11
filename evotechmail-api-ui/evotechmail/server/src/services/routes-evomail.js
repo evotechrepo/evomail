@@ -1581,6 +1581,57 @@ router.get('/compliance/subscribers', async (req, res) => {
   }
 });
 
+// GET /evotechmail/api/compliance/stats
+// → { open:{compliant:n, non_compliant:n}, closed:{compliant:n, non_compliant:n} }
+router.get('/compliance/stats', async (req, res) => {
+  try {
+    // Optional: accept filters; leave commented if you want global stats only
+    // const qRaw      = (req.query.q || '').toString().trim();
+    // const statusRaw = (req.query.status || '').toString().trim();
+    // const compliant = (req.query.compliant || 'all').toString().trim().toLowerCase();
+
+    const params = [];
+    const where  = [];
+
+    // --- If you want to support filters, uncomment and mirror logic from /compliance/subscribers ---
+    // const pmb = Number.parseInt(qRaw, 10);
+    // if (Number.isFinite(pmb)) { params.push(pmb); where.push(`s.pmb = $${params.length}`); }
+    // if (statusRaw)           { params.push(statusRaw.toLowerCase()); where.push(`LOWER(st.status_cd) = $${params.length}`); }
+    // if (compliant === 'true' || compliant === 'false') { params.push(compliant === 'true'); where.push(`s.usps_compliant = $${params.length}`); }
+    // -----------------------------------------------------------------------------------------------
+
+    const sql = `
+      SELECT
+        CASE WHEN LOWER(COALESCE(st.status_cd,'')) = 'closed' THEN 'closed' ELSE 'open' END AS bucket,
+        s.usps_compliant AS compliant,
+        COUNT(*)::bigint AS n
+      FROM evomail.subscriber s
+      LEFT JOIN evomail.status st ON st.status_id = s.fk_status_id
+      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      GROUP BY bucket, s.usps_compliant
+    `;
+
+    const { rows } = await pool.query(sql, params);
+
+    // Fold into the shape the UI expects
+    const out = {
+      open:   { compliant: 0, non_compliant: 0 },
+      closed: { compliant: 0, non_compliant: 0 },
+    };
+    for (const r of rows) {
+      const bucket = r.bucket === 'closed' ? 'closed' : 'open';
+      const key    = r.compliant ? 'compliant' : 'non_compliant';
+      out[bucket][key] = Number(r.n) || 0;
+    }
+
+    res.json(out);
+  } catch (e) {
+    console.error('GET /compliance/stats failed:', e);
+    res.status(500).json({ error: 'Failed to load stats' });
+  }
+});
+
+
 
 
 // --- List compliance notes for a subscriber ---------------------------------
