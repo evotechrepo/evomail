@@ -215,6 +215,7 @@
     async function fetchPage(){
       if (S.busy || S.end) return [];
       S.busy = true;
+
       try {
         const p = new URLSearchParams({
           q: S.q || '',
@@ -250,19 +251,34 @@
       }
     }
 
-      
+    async function loadMore(){
+      const page = await fetchPage();
+      if (!page.length) return;
+      S.items.push(...page);
+      renderList(true);
+    }
   
     // Render list
-    function renderList(append=false){
-      if (!append) listEl.innerHTML = '';
+    function renderList(append = false){
+      if (!append) {
+        listEl.innerHTML = '';
+        S.rendered = 0;
+      }
       if (!S.items.length) {
         listEl.innerHTML = '<div class="muted" style="padding:12px">No matches.</div>';
         updateCount();
         return;
       }
+
       const frag = document.createDocumentFragment();
-      for (const s of S.items) frag.appendChild(renderPill(s));
+      // only render the new items when appending
+      const from = append ? S.rendered : 0;
+      for (let i = from; i < S.items.length; i++) {
+        frag.appendChild(renderPill(S.items[i]));
+      }
       listEl.appendChild(frag);
+
+      S.rendered = S.items.length;
       addLoadMoreIfNeeded();
       updateCount();
     }
@@ -508,13 +524,6 @@ function closeDrawer(){ drawer?.classList.remove('open'); }
       const page = await fetchPage();
       S.items.push(...page);
       renderList(false);
-    }
-  
-    async function loadMore(){
-      const page = await fetchPage();
-      if (!page.length) return;
-      S.items.push(...page);
-      renderList(true);
     }
   
     function addLoadMoreIfNeeded(){
