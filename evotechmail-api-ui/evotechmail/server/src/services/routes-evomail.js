@@ -81,7 +81,8 @@ router.get('/header-values', async (_req, res) => {
             ),
             bcg_prompts as
             (
-            Select case when lower(st.status_cd) = 'closed' then '' else initcap(bs.bcg_status_cd) end bcg_status_cd, initcap(st.status_cd) status_cd,  count(*) ccnt 
+            --Select case when lower(st.status_cd) = 'closed' then '' else initcap(bs.bcg_status_cd) end bcg_status_cd, initcap(st.status_cd) status_cd,  count(*) ccnt 
+            Select initcap(bs.bcg_status_cd)  bcg_status_cd, initcap(st.status_cd) status_cd,  count(*) ccnt 
             From evomail.subscriber s, evomail.status st, evomail.bcg_status bs
             WHere s.fk_status_id = st.status_id
             And s.fk_bcg_status_id = bs.bcg_status_id
@@ -96,7 +97,8 @@ router.get('/header-values', async (_req, res) => {
                 And lower(bs.bcg_status_cd) != 'closed'
                 )
               )
-          Group by case when lower(st.status_cd) = 'closed' then '' else initcap(bs.bcg_status_cd) end, initcap(st.status_cd)
+            --Group by case when lower(st.status_cd) = 'closed' then '' else initcap(bs.bcg_status_cd) end, initcap(st.status_cd)
+            Group by initcap(bs.bcg_status_cd), initcap(st.status_cd)
             )
         SELECT
               COALESCE(
@@ -1569,7 +1571,7 @@ router.get('/compliance/subscribers', async (req, res) => {
       LEFT JOIN evomail.status      st  ON st.status_id       = s.fk_status_id
       LEFT JOIN evomail.bcg_status  bcg ON bcg.bcg_status_id  = s.fk_bcg_status_id
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-      ORDER BY s.pmb ASC
+      ORDER BY s.pmb ASC, s.subscriber_id ASC
       LIMIT $${limIdx} OFFSET $${offIdx}
     `;
 
