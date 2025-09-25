@@ -52,3 +52,39 @@ input[type="password"], input[type="text"], input[type="email"], select, textare
   #hub{ grid-template-columns:repeat(2,minmax(0,1fr)) }
   .btn,.btn--primary{width:100%} .btn--sm{width:auto}
 }
+
+
+
+/* ===== Users table ===== */
+.tbl-wrap{
+  margin-top:10px;
+  border:1px solid #e5e7eb; border-radius:12px; background:#fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+  overflow:auto; -webkit-overflow-scrolling:touch;
+}
+.tbl{
+  width:100%; border-collapse:separate; border-spacing:0; min-width:760px;
+  font-size:14px; color:#111827;
+}
+.tbl thead th{
+  position:sticky; top:0; z-index:1;
+  text-align:left; font-weight:700; padding:10px 12px;
+  background:#f8fafc; color:#374151; border-bottom:2px solid #0097A7;
+}
+.tbl tbody td{
+  padding:10px 12px; vertical-align:middle; border-bottom:1px solid #eef2f7;
+}
+.tbl tbody tr:nth-child(even){ background:#fcfdff; }
+.tbl tbody tr:hover{ background:#f3f4f6; }
+
+/* tiny helper row above table */
+.list-head{
+  display:flex; align-items:center; gap:10px; margin-top:8px;
+}
+.list-head .muted{ margin-left:auto; }
+
+/* mobile tweaks */
+@media (max-width:640px){
+  .tbl{ min-width:640px; font-size:13px; }
+  .tbl thead th, .tbl tbody td{ padding:9px 10px; }
+}
